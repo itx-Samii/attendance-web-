@@ -37,6 +37,13 @@ export default function AttendanceMarkingPage() {
   const [isPending, startTransition] = useTransition();
   const [toastMessage, setToastMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
+  // Phase 3 States: Review Modal, customizable templates, and absentees
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [alertTemplate, setAlertTemplate] = useState(
+    'Dear Parent, your child {student_name} (Roll: {roll_number}) was marked ABSENT from {class_name} today ({date}). Please contact the administration.'
+  );
+  const [absenteesList, setAbsenteesList] = useState<Student[]>([]);
+
   // Set default date to today in YYYY-MM-DD format
   useEffect(() => {
     const today = new Date().toISOString().split('T')[0];
@@ -149,11 +156,30 @@ export default function AttendanceMarkingPage() {
     showToast('All student records set to Present');
   };
 
-  const handleSave = () => {
+  // Trigger save button flow (D-01)
+  const handleSaveTrigger = () => {
+    // 1. Identify absentees to see if notifications modal review is required
+    const currentAbsentees = students.filter(
+      (stud) => attendance[stud.rollNumber]?.status === 'Absent'
+    );
+
+    if (currentAbsentees.length > 0) {
+      setAbsenteesList(currentAbsentees);
+      setShowPreviewModal(true); // Open Phase 3 customized review modal (D-01)
+    } else {
+      // Direct commit if no absentees exist
+      executeAttendanceCommit([]);
+    }
+  };
+
+  // Commit actual attendance data and dispatch notification logs
+  const executeAttendanceCommit = (alertDispatches: Array<{ rollNumber: string; studentName: string; parentPhone: string; message: string }>) => {
     startTransition(async () => {
       try {
         const recordsPayload = Object.values(attendance);
-        const res = await fetch('/api/attendance', {
+        
+        // 1. Save daily roster records
+        const resAttendance = await fetch('/api/attendance', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -163,16 +189,51 @@ export default function AttendanceMarkingPage() {
           }),
         });
 
-        if (res.ok) {
-          showToast('Attendance worksheet saved atomically!');
-        } else {
+        if (!resAttendance.ok) {
           showToast('Failed to save attendance records.', 'error');
+          return;
         }
+
+        // 2. Dispatch notifications if any absentees were processed (D-02)
+        if (alertDispatches.length > 0) {
+          const resNotifications = await fetch('/api/notifications', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              classId: selectedClass,
+              date: selectedDate,
+              dispatches: alertDispatches,
+            }),
+          });
+
+          if (resNotifications.ok) {
+            const data = await resNotifications.json();
+            const sentCount = alertDispatches.length;
+            const modeLabel = data.mode === 'Simulator' ? 'Simulated' : 'Sent';
+            showToast(`Roster saved and ${sentCount} ${modeLabel} parent alerts logged!`);
+          } else {
+            showToast('Attendance saved, but failed to log notifications.', 'error');
+          }
+        } else {
+          showToast('Attendance worksheet saved atomically!');
+        }
+
+        setShowPreviewModal(false);
       } catch (err) {
-        console.error('Failed to post daily attendance:', err);
+        console.error('Failed to commit attendance details:', err);
         showToast('Network error while saving.', 'error');
       }
     });
+  };
+
+  // Dynamic interpolation helper mapping template tags (D-05)
+  const getInterpolatedAlertText = (studentName: string, rollNumber: string) => {
+    const className = classes.find((c) => c.classId === selectedClass)?.name || selectedClass;
+    return alertTemplate
+      .replace(/{student_name}/gi, studentName)
+      .replace(/{roll_number}/gi, rollNumber)
+      .replace(/{class_name}/gi, className)
+      .replace(/{date}/gi, selectedDate);
   };
 
   // Real-time dynamic count summaries
@@ -198,7 +259,7 @@ export default function AttendanceMarkingPage() {
               position: 'fixed',
               top: '24px',
               right: '24px',
-              zIndex: 50,
+              zIndex: 150,
               padding: '16px 24px',
               borderRadius: '10px',
               backgroundColor: toastMessage.type === 'success' ? 'var(--color-success)' : 'var(--color-danger)',
@@ -482,7 +543,7 @@ export default function AttendanceMarkingPage() {
         {/* Submit Actions Footer */}
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '16px' }}>
           <button
-            onClick={handleSave}
+            onClick={handleSaveTrigger}
             disabled={loading || isPending || students.length === 0}
             style={{
               padding: '12px 28px',
@@ -499,15 +560,211 @@ export default function AttendanceMarkingPage() {
             }}
             className="save-btn-hover"
           >
-            {isPending ? 'Saving atomic changes...' : 'Save Roster Attendance'}
+            {isPending ? 'Processing dispatches...' : 'Save Roster Attendance'}
           </button>
         </div>
       </div>
+
+      {/* Phase 3: Twilio SMS Alerts Confirmation & Review Preview Modal (D-01) */}
+      {showPreviewModal && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            backgroundColor: 'rgba(0, 0, 0, 0.45)',
+            backdropFilter: 'blur(10px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 100,
+            padding: '24px',
+            animation: 'fadeIn 0.25s ease-out',
+          }}
+        >
+          <div
+            className="glass-panel"
+            style={{
+              width: '100%',
+              maxWidth: '650px',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              padding: '28px 32px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '24px',
+              border: '1px solid var(--border-dim)',
+              boxShadow: 'var(--shadow-lg)',
+            }}
+          >
+            {/* Modal Headings */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h2 style={{ fontSize: '1.35rem', fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>
+                  Review Parent SMS Alerts
+                </h2>
+                <span
+                  style={{
+                    fontSize: '0.75rem',
+                    fontWeight: 700,
+                    padding: '4px 10px',
+                    borderRadius: '20px',
+                    backgroundColor: 'rgba(239, 68, 68, 0.08)',
+                    color: 'var(--color-danger)',
+                  }}
+                >
+                  {absenteesList.length} Absentees Detected
+                </span>
+              </div>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 500 }}>
+                Adjust parent notification template dynamically prior to triggering API dispatches.
+              </p>
+            </div>
+
+            {/* Base SMS Alert Template Customizer (D-05) */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>
+                Base Message Template Text
+              </label>
+              <textarea
+                value={alertTemplate}
+                onChange={(e) => setAlertTemplate(e.target.value)}
+                placeholder="Compose customizable base phrasing..."
+                style={{
+                  width: '100%',
+                  height: '80px',
+                  padding: '12px 14px',
+                  borderRadius: '8px',
+                  border: '1px solid var(--border-dim)',
+                  backgroundColor: 'var(--background-default)',
+                  color: 'var(--text-primary)',
+                  fontSize: '0.85rem',
+                  fontWeight: 500,
+                  outline: 'none',
+                  resize: 'none',
+                  lineHeight: '1.4',
+                }}
+                className="remarks-input"
+              />
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                <span>Dynamic Tags:</span>
+                <code style={{ padding: '2px 4px', backgroundColor: 'var(--background-alt)', borderRadius: '4px' }}>{"{student_name}"}</code>
+                <code style={{ padding: '2px 4px', backgroundColor: 'var(--background-alt)', borderRadius: '4px' }}>{"{roll_number}"}</code>
+                <code style={{ padding: '2px 4px', backgroundColor: 'var(--background-alt)', borderRadius: '4px' }}>{"{class_name}"}</code>
+                <code style={{ padding: '2px 4px', backgroundColor: 'var(--background-alt)', borderRadius: '4px' }}>{"{date}"}</code>
+              </div>
+            </div>
+
+            {/* List of Draft Messages to Parents */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <label style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>
+                Recipient Preview Cards
+              </label>
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px',
+                  maxHeight: '260px',
+                  overflowY: 'auto',
+                  paddingRight: '4px',
+                }}
+              >
+                {absenteesList.map((stud) => {
+                  const smsBody = getInterpolatedAlertText(stud.name, stud.rollNumber);
+                  return (
+                    <div
+                      key={stud.rollNumber}
+                      style={{
+                        padding: '16px',
+                        borderRadius: '8px',
+                        border: '1px solid var(--border-dim)',
+                        backgroundColor: 'var(--background-alt)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '8px',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontWeight: 700, fontSize: '0.85rem' }}>
+                          {stud.name} ({stud.rollNumber})
+                        </span>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+                          📱 Parent: {stud.parentPhone}
+                        </span>
+                      </div>
+                      <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: '1.4', margin: 0, fontStyle: 'italic' }}>
+                        "{smsBody}"
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Modal Action Buttons Footer */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '8px' }}>
+              <button
+                onClick={() => setShowPreviewModal(false)}
+                style={{
+                  padding: '10px 20px',
+                  borderRadius: '6px',
+                  fontSize: '0.85rem',
+                  fontWeight: 600,
+                  border: '1px solid var(--border-dim)',
+                  backgroundColor: 'transparent',
+                  color: 'var(--text-secondary)',
+                  cursor: 'pointer',
+                  transition: 'var(--transition-fast)',
+                }}
+                className="secondary-btn-hover"
+              >
+                Cancel review
+              </button>
+              
+              <button
+                onClick={() => {
+                  // Compile individual personalized alert dispatches for payload (D-02)
+                  const dispatches = absenteesList.map((stud) => ({
+                    rollNumber: stud.rollNumber,
+                    studentName: stud.name,
+                    parentPhone: stud.parentPhone,
+                    message: getInterpolatedAlertText(stud.name, stud.rollNumber),
+                  }));
+                  executeAttendanceCommit(dispatches);
+                }}
+                disabled={isPending}
+                style={{
+                  padding: '10px 24px',
+                  borderRadius: '6px',
+                  fontSize: '0.85rem',
+                  fontWeight: 700,
+                  border: 'none',
+                  backgroundColor: 'var(--color-primary)',
+                  color: '#fff',
+                  cursor: 'pointer',
+                  boxShadow: 'var(--shadow-glow)',
+                  transition: 'var(--transition-fast)',
+                }}
+                className="save-btn-hover"
+              >
+                {isPending ? 'Sending dispatches...' : 'Dispatch Parent Alerts'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style jsx global>{`
         @keyframes slideIn {
           from { transform: translateY(-20px); opacity: 0; }
           to { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
         }
         .table-row-hover:hover {
           background-color: var(--background-alt) !important;

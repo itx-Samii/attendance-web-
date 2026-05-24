@@ -7,8 +7,8 @@ Aura Attendance Management System is a premium, user-centric daily attendance pl
 ## Phases
 
 - [x] **Phase 1: Foundation & Layout** - Initialize the premium dark/light layout and JSON file-based database adapters. (completed 2026-05-24)
-- [ ] **Phase 2: Roster & Daily Marking** - Develop student rosters and interactive daily attendance marking tables.
-- [ ] **Phase 3: Twilio SMS Notifications** - Integrate the Twilio messaging API and real-time parent alert verification.
+- [x] **Phase 2: Roster & Daily Marking** - Develop student rosters and interactive daily attendance marking tables. (completed 2026-05-24)
+- [x] **Phase 3: Twilio SMS Notifications** - Integrate the Twilio messaging API and real-time parent alert verification. (completed 2026-05-24)
 - [ ] **Phase 4: Admin Analytics & Polish** - Construct analytics graphs, key metric widgets, and finalize visual transitions.
 
 ## Phase Details
@@ -40,11 +40,11 @@ Plans:
   3. Interactive attendance table renders a scrollable list of students with Present/Absent/Late/Leave selectors.
   4. Bulk-marking sets all unmarked records to "Present" immediately.
   5. Mark logs are successfully saved to local JSON storage keyed by Date and Class ID.
-**Plans:** 2 plans
+**Plans:** 2/2 plans complete
 
 Plans:
-- [ ] 02-01: Develop class and student registration views with dynamic listing rosters.
-- [ ] 02-02: Implement the interactive daily attendance table, bulk-actions, and date-keyed saving controllers.
+- [x] 02-01: Develop class and student registration views with dynamic listing rosters.
+- [x] 02-02: Implement the interactive daily attendance table, bulk-actions, and date-keyed saving controllers.
 
 ### Phase 3: Twilio SMS Notifications
 **Goal:** Set up Twilio API credentials, generate parent alerts, preview customized notifications, and trigger real-time delivery logs.
@@ -55,11 +55,11 @@ Plans:
   1. Teachers can preview draft SMS parent notification lists prior to sending.
   2. Absentees' parent contacts receive real-time, customized SMS alerts via Twilio.
   3. Delivery histories (timestamp, target, status) are recorded in the local JSON storage and displayable.
-**Plans:** 2 plans
+**Plans:** 2/2 plans complete
 
 Plans:
-- [ ] 03-01: Integrate Twilio Node SDK and build the personalized parent alert draft/preview modal.
-- [ ] 03-02: Develop active SMS dispatching logic and notification log auditor views.
+- [x] 03-01: Integrate Twilio Node SDK and build the personalized parent alert draft/preview modal.
+- [x] 03-02: Develop active SMS dispatching logic and notification log auditor views.
 
 ### Phase 4: Admin Analytics & Polish
 **Goal:** Build visual analytics dashboard components, overall statistical cards, check security edges, and polish visual polish.
@@ -83,6 +83,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation & Layout | 2/2 | Complete    | 2026-05-24 |
-| 2. Roster & Daily Marking | 0/2 | Not started | - |
-| 3. Twilio SMS Notifications | 0/2 | Not started | - |
+| 2. Roster & Daily Marking | 2/2 | Complete    | 2026-05-24 |
+| 3. Twilio SMS Notifications | 2/2 | Complete    | 2026-05-24 |
 | 4. Admin Analytics & Polish | 0/1 | Not started | - |

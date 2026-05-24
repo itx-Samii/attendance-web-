@@ -1,0 +1,58 @@
+[
+  {
+    "classId": "9a",
+    "date": "2026-05-24",
+    "records": [
+      {
+        "rollNumber": "9A-01",
+        "status": "Absent",
+        "remarks": ""
+      },
+      {
+        "rollNumber": "9A-02",
+        "status": "Present",
+        "remarks": ""
+      },
+      {
+        "rollNumber": "9A-03",
+        "status": "Present",
+        "remarks": ""
+      },
+      {
+        "rollNumber": "9A-04",
+        "status": "Absent",
+        "remarks": ""
+      },
+      {
+        "rollNumber": "9A-05",
+        "status": "Present",
+        "remarks": ""
+      },
+      {
+        "rollNumber": "9A-06",
+        "status": "Present",
+        "remarks": ""
+      },
+      {
+        "rollNumber": "9A-07",
+        "status": "Present",
+        "remarks": ""
+      },
+      {
+        "rollNumber": "9A-08",
+        "status": "Present",
+        "remarks": ""
+      },
+      {
+        "rollNumber": "9A-09",
+        "status": "Present",
+        "remarks": ""
+      },
+      {
+        "rollNumber": "9A-10",
+        "status": "Present",
+        "remarks": ""
+      }
+    ]
+  }
+]

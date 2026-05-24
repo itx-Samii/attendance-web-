@@ -61,6 +61,13 @@ export default function DashboardPage() {
         } else {
           setAverageRate('96.4%'); // Seed fallback
         }
+
+        // Fetch parent notifications log count dynamically
+        const resAlerts = await fetch('/api/notifications');
+        if (resAlerts.ok) {
+          const alerts = await resAlerts.json();
+          setSmsDispatches(alerts.length);
+        }
       } catch (err) {
         console.error('Failed to load dashboard metrics:', err);
       } finally {

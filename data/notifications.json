@@ -1,0 +1,57 @@
+[
+  {
+    "classId": "9a",
+    "date": "2026-05-24",
+    "rollNumber": "9A-01",
+    "studentName": "Aiden Smith",
+    "parentPhone": "+15550100001",
+    "message": "Dear Parent, your child Aiden Smith (Roll: 9A-01) was marked ABSENT from Grade 9 - Section A today (2026-05-24). Please call back soon.",
+    "status": "Simulator",
+    "sid": "SMY2OV42ZC9",
+    "timestamp": "2026-05-24T09:57:08.993Z"
+  },
+  {
+    "classId": "9a",
+    "date": "2026-05-24",
+    "rollNumber": "9A-04",
+    "studentName": "Diana Miller",
+    "parentPhone": "+15550100004",
+    "message": "Dear Parent, your child Diana Miller (Roll: 9A-04) was marked ABSENT from Grade 9 - Section A today (2026-05-24). Please call back soon.",
+    "status": "Simulator",
+    "sid": "SMOA0O3P904",
+    "timestamp": "2026-05-24T09:57:09.016Z"
+  },
+  {
+    "classId": "9a",
+    "date": "2026-05-24",
+    "rollNumber": "9A-01",
+    "studentName": "Aiden Smith",
+    "parentPhone": "+15550100001",
+    "message": "Dear Parent, your child Aiden Smith (Roll: 9A-01) was marked ABSENT from Grade 9 - Section A today (2026-05-24). Please contact the administration.",
+    "status": "Simulator",
+    "sid": "SM7FTFBGDYV",
+    "timestamp": "2026-05-24T09:56:36.482Z"
+  },
+  {
+    "classId": "9a",
+    "date": "2026-05-24",
+    "rollNumber": "9A-02",
+    "studentName": "Bella Johnson",
+    "parentPhone": "+15550100002",
+    "message": "Dear Parent, your child Bella Johnson (Roll: 9A-02) was marked ABSENT from Grade 9 - Section A today (2026-05-24). Please contact the administration.",
+    "status": "Simulator",
+    "sid": "SM2Q5Z6R2SI",
+    "timestamp": "2026-05-24T09:56:36.503Z"
+  },
+  {
+    "classId": "9a",
+    "date": "2026-05-24",
+    "rollNumber": "9A-08",
+    "studentName": "Hannah Thomas",
+    "parentPhone": "+15550100008",
+    "message": "Dear Parent, your child Hannah Thomas (Roll: 9A-08) was marked ABSENT from Grade 9 - Section A today (2026-05-24). Please contact the administration.",
+    "status": "Simulator",
+    "sid": "SMZULH2KK6P",
+    "timestamp": "2026-05-24T09:56:36.528Z"
+  }
+]
