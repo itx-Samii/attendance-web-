@@ -18,76 +18,162 @@ export default function DashboardPage() {
   const [classRates, setClassRates] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function loadStats() {
-      try {
-        setLoading(true);
-        // Load classrooms
-        const resClasses = await fetch('/api/classes');
-        let classesData: Classroom[] = [];
-        if (resClasses.ok) {
-          classesData = await resClasses.json();
-          setClasses(classesData);
-        }
-
-        // Count students by loading each class's students (or query classes data)
-        let totalStudents = 0;
-        const counts: Record<string, number> = {};
-        for (const cls of classesData) {
-          const resStuds = await fetch(`/api/students?classId=${cls.classId}`);
-          if (resStuds.ok) {
-            const studs = await resStuds.json();
-            totalStudents += studs.length;
-            counts[cls.classId] = studs.length;
-          }
-        }
-        setStudentCount(totalStudents || 40); // Seed defaults if empty
-        setStudentCounts(counts);
-
-        // Dynamic Attendance average rate calculation (if records exist)
-        const dateString = new Date().toISOString().split('T')[0];
-        let presentCount = 0;
-        let totalMarked = 0;
-        const rates: Record<string, number> = {};
-
-        for (const cls of classesData) {
-          const resAtt = await fetch(`/api/attendance?classId=${cls.classId}&date=${dateString}`);
-          if (resAtt.ok) {
-            const att = await resAtt.json();
-            if (att && att.length > 0) {
-              totalMarked += att.length;
-              const present = att.filter((r: any) => r.status === 'Present' || r.status === 'Late').length;
-              presentCount += present;
-              rates[cls.classId] = Math.round((present / att.length) * 100);
-            } else {
-              // Fallback seed averages per section so the cards look fully populated and stunning
-              rates[cls.classId] = cls.classId === '9a' ? 90 : cls.classId === '9b' ? 95 : 100;
-            }
-          }
-        }
-        setClassRates(rates);
-
-        if (totalMarked > 0) {
-          const rate = ((presentCount / totalMarked) * 100).toFixed(1);
-          setAverageRate(`${rate}%`);
-        } else {
-          setAverageRate('96.4%'); // Seed fallback
-        }
-
-        // Fetch parent notifications log count dynamically
-        const resAlerts = await fetch('/api/notifications');
-        if (resAlerts.ok) {
-          const alerts = await resAlerts.json();
-          setSmsDispatches(alerts.length);
-        }
-      } catch (err) {
-        console.error('Failed to load dashboard metrics:', err);
-      } finally {
-        setLoading(false);
+  async function loadStats() {
+    try {
+      setLoading(true);
+      // Load classrooms
+      const resClasses = await fetch('/api/classes');
+      let classesData: Classroom[] = [];
+      if (resClasses.ok) {
+        classesData = await resClasses.json();
+        setClasses(classesData);
       }
+
+      // Count students by loading each class's students (or query classes data)
+      let totalStudents = 0;
+      const counts: Record<string, number> = {};
+      for (const cls of classesData) {
+        const resStuds = await fetch(`/api/students?classId=${cls.classId}`);
+        if (resStuds.ok) {
+          const studs = await resStuds.json();
+          totalStudents += studs.length;
+          counts[cls.classId] = studs.length;
+        }
+      }
+      setStudentCount(totalStudents || 40); // Seed defaults if empty
+      setStudentCounts(counts);
+
+      // Dynamic Attendance average rate calculation (if records exist)
+      const dateString = new Date().toISOString().split('T')[0];
+      let presentCount = 0;
+      let totalMarked = 0;
+      const rates: Record<string, number> = {};
+
+      for (const cls of classesData) {
+        const resAtt = await fetch(`/api/attendance?classId=${cls.classId}&date=${dateString}`);
+        if (resAtt.ok) {
+          const att = await resAtt.json();
+          if (att && att.length > 0) {
+            totalMarked += att.length;
+            const present = att.filter((r: any) => r.status === 'Present' || r.status === 'Late').length;
+            presentCount += present;
+            rates[cls.classId] = Math.round((present / att.length) * 100);
+          } else {
+            // Fallback seed averages per section so the cards look fully populated and stunning
+            rates[cls.classId] = cls.classId === '9a' ? 90 : cls.classId === '9b' ? 95 : 100;
+          }
+        }
+      }
+      setClassRates(rates);
+
+      if (totalMarked > 0) {
+        const rate = ((presentCount / totalMarked) * 100).toFixed(1);
+        setAverageRate(`${rate}%`);
+      } else {
+        setAverageRate('96.4%'); // Seed fallback
+      }
+
+      // Fetch parent notifications log count dynamically
+      const resAlerts = await fetch('/api/notifications');
+      if (resAlerts.ok) {
+        const alerts = await resAlerts.json();
+        setSmsDispatches(alerts.length);
+      }
+    } catch (err) {
+      console.error('Failed to load dashboard metrics:', err);
+    } finally {
+      setLoading(false);
     }
+  }
+
+  useEffect(() => {
     loadStats();
   }, []);
+
+  // State for Class Creation Form
+  const [newClassId, setNewClassId] = useState('');
+  const [newClassName, setNewClassName] = useState('');
+  const [classSubmitting, setClassSubmitting] = useState(false);
+  const [classError, setClassError] = useState('');
+  const [classSuccess, setClassSuccess] = useState('');
+
+  // State for Student Registration Form
+  const [newRollNum, setNewRollNum] = useState('');
+  const [newStudName, setNewStudName] = useState('');
+  const [newParentPhone, setNewParentPhone] = useState('');
+  const [targetClassId, setTargetClassId] = useState('');
+  const [studSubmitting, setStudSubmitting] = useState(false);
+  const [studError, setStudError] = useState('');
+  const [studSuccess, setStudSuccess] = useState('');
+
+  const handleCreateClass = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newClassId || !newClassName) {
+      setClassError('Please enter both Section Code and Class Name.');
+      return;
+    }
+    try {
+      setClassSubmitting(true);
+      setClassError('');
+      setClassSuccess('');
+      const res = await fetch('/api/classes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ classId: newClassId, name: newClassName }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setClassSuccess('Classroom section created successfully!');
+        setNewClassId('');
+        setNewClassName('');
+        loadStats();
+      } else {
+        setClassError(data.error || 'Failed to create classroom.');
+      }
+    } catch (err) {
+      setClassError('An unexpected error occurred.');
+    } finally {
+      setClassSubmitting(false);
+    }
+  };
+
+  const handleRegisterStudent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newRollNum || !newStudName || !newParentPhone || !targetClassId) {
+      setStudError('Please complete all fields.');
+      return;
+    }
+    try {
+      setStudSubmitting(true);
+      setStudError('');
+      setStudSuccess('');
+      const res = await fetch('/api/students', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          rollNumber: newRollNum,
+          name: newStudName,
+          parentPhone: newParentPhone,
+          classId: targetClassId
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setStudSuccess('Student profile registered successfully!');
+        setNewRollNum('');
+        setNewStudName('');
+        setNewParentPhone('');
+        setTargetClassId('');
+        loadStats();
+      } else {
+        setStudError(data.error || 'Failed to register student.');
+      }
+    } catch (err) {
+      setStudError('An unexpected error occurred.');
+    } finally {
+      setStudSubmitting(false);
+    }
+  };
 
   const stats = [
     {
@@ -442,6 +528,229 @@ export default function DashboardPage() {
               ))}
             </div>
           )}
+        </div>
+
+        {/* Quick Administrative Actions Panel */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '32px' }}>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 700, letterSpacing: '-0.02em' }}>
+            Quick Administrative Registry
+          </h2>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+              gap: '24px',
+            }}
+          >
+            {/* Form A: Create Classroom Section */}
+            <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '18px', border: '1px solid var(--border-dim)' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                  Create Class Section
+                </h3>
+                <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 500 }}>
+                  Instantly spawn a new active section in the school database at runtime
+                </p>
+              </div>
+
+              <form onSubmit={handleCreateClass} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                {classError && <div style={{ fontSize: '0.8rem', color: 'var(--color-danger)', fontWeight: 600 }}>{classError}</div>}
+                {classSuccess && <div style={{ fontSize: '0.8rem', color: 'var(--color-success)', fontWeight: 600 }}>{classSuccess}</div>}
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.76rem', fontWeight: 600, color: 'var(--text-muted)' }}>SECTION CODE</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 11a"
+                    value={newClassId}
+                    onChange={(e) => setNewClassId(e.target.value)}
+                    style={{
+                      padding: '10px 14px',
+                      borderRadius: '8px',
+                      backgroundColor: 'var(--background-alt)',
+                      border: '1px solid var(--border-dim)',
+                      color: 'var(--text-primary)',
+                      fontSize: '0.88rem',
+                      fontWeight: 500,
+                      outline: 'none',
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.76rem', fontWeight: 600, color: 'var(--text-muted)' }}>CLASS NAME</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Grade 11 - Section A"
+                    value={newClassName}
+                    onChange={(e) => setNewClassName(e.target.value)}
+                    style={{
+                      padding: '10px 14px',
+                      borderRadius: '8px',
+                      backgroundColor: 'var(--background-alt)',
+                      border: '1px solid var(--border-dim)',
+                      color: 'var(--text-primary)',
+                      fontSize: '0.88rem',
+                      fontWeight: 500,
+                      outline: 'none',
+                    }}
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={classSubmitting}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    padding: '12px',
+                    borderRadius: '8px',
+                    backgroundColor: 'var(--color-primary)',
+                    color: '#fff',
+                    fontWeight: 600,
+                    fontSize: '0.9rem',
+                    border: 'none',
+                    cursor: 'pointer',
+                    transition: 'var(--transition-smooth)',
+                    marginTop: '6px',
+                  }}
+                  className="quick-btn-hover"
+                >
+                  {classSubmitting ? 'Creating...' : 'Register Section'}
+                </button>
+              </form>
+            </div>
+
+            {/* Form B: Register Student Profile */}
+            <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '18px', border: '1px solid var(--border-dim)' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                  Register Student Profile
+                </h3>
+                <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 500 }}>
+                  Enroll a new student profile under any active classroom register
+                </p>
+              </div>
+
+              <form onSubmit={handleRegisterStudent} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {studError && <div style={{ fontSize: '0.8rem', color: 'var(--color-danger)', fontWeight: 600 }}>{studError}</div>}
+                {studSuccess && <div style={{ fontSize: '0.8rem', color: 'var(--color-success)', fontWeight: 600 }}>{studSuccess}</div>}
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <label style={{ fontSize: '0.76rem', fontWeight: 600, color: 'var(--text-muted)' }}>ROLL NUMBER</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. 11A-01"
+                      value={newRollNum}
+                      onChange={(e) => setNewRollNum(e.target.value)}
+                      style={{
+                        padding: '10px 14px',
+                        borderRadius: '8px',
+                        backgroundColor: 'var(--background-alt)',
+                        border: '1px solid var(--border-dim)',
+                        color: 'var(--text-primary)',
+                        fontSize: '0.88rem',
+                        fontWeight: 500,
+                        outline: 'none',
+                      }}
+                    />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <label style={{ fontSize: '0.76rem', fontWeight: 600, color: 'var(--text-muted)' }}>ASSIGN SECTION</label>
+                    <select
+                      value={targetClassId}
+                      onChange={(e) => setTargetClassId(e.target.value)}
+                      style={{
+                        padding: '10px 14px',
+                        borderRadius: '8px',
+                        backgroundColor: 'var(--background-alt)',
+                        border: '1px solid var(--border-dim)',
+                        color: 'var(--text-primary)',
+                        fontSize: '0.88rem',
+                        fontWeight: 500,
+                        outline: 'none',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <option value="">Select...</option>
+                      {classes.map((c) => (
+                        <option key={c.classId} value={c.classId}>
+                          {c.name} ({c.classId.toUpperCase()})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.76rem', fontWeight: 600, color: 'var(--text-muted)' }}>STUDENT FULL NAME</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Sarah Connor"
+                    value={newStudName}
+                    onChange={(e) => setNewStudName(e.target.value)}
+                    style={{
+                      padding: '10px 14px',
+                      borderRadius: '8px',
+                      backgroundColor: 'var(--background-alt)',
+                      border: '1px solid var(--border-dim)',
+                      color: 'var(--text-primary)',
+                      fontSize: '0.88rem',
+                      fontWeight: 500,
+                      outline: 'none',
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.76rem', fontWeight: 600, color: 'var(--text-muted)' }}>PARENT MOBILE (E.164)</label>
+                  <input
+                    type="tel"
+                    placeholder="e.g. +15550100099"
+                    value={newParentPhone}
+                    onChange={(e) => setNewParentPhone(e.target.value)}
+                    style={{
+                      padding: '10px 14px',
+                      borderRadius: '8px',
+                      backgroundColor: 'var(--background-alt)',
+                      border: '1px solid var(--border-dim)',
+                      color: 'var(--text-primary)',
+                      fontSize: '0.88rem',
+                      fontWeight: 500,
+                      outline: 'none',
+                    }}
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={studSubmitting}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    padding: '12px',
+                    borderRadius: '8px',
+                    backgroundColor: 'var(--color-primary)',
+                    color: '#fff',
+                    fontWeight: 600,
+                    fontSize: '0.9rem',
+                    border: 'none',
+                    cursor: 'pointer',
+                    transition: 'var(--transition-smooth)',
+                    marginTop: '6px',
+                  }}
+                  className="quick-btn-hover"
+                >
+                  {studSubmitting ? 'Registering...' : 'Add Student to Section'}
+                </button>
+              </form>
+            </div>
+          </div>
         </div>
       </div>
 
