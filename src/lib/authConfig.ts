@@ -61,7 +61,7 @@ export function decryptSession(token: string): SessionData | null {
     
     return session;
   } catch (error) {
-    console.warn('Session decryption failed:', error.message);
+    console.warn('Session decryption failed:', error instanceof Error ? error.message : error);
     return null;
   }
 }
