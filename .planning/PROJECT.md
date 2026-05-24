@@ -16,6 +16,7 @@ Empower teachers with a highly intuitive, responsive daily attendance marking da
 
 - **ATT-01**: Select class and view a classic, clean table roster of students with roll numbers and status selectors. — *Validated in Phase 2*
 - **ATT-02**: Mark daily student attendance status using four clear states: **Present**, **Absent**, **Late**, and **Leave**. — *Validated in Phase 2*
+- **ATT-03**: Trigger real-time, personalized SMS or WhatsApp parent notifications via Twilio API when a student is marked Absent. — *Validated in Phase 3*
 - **ATT-04**: Maintain a zero-config, ultra-fast **local JSON-file database** to store classes, students, daily rosters, and notification history. — *Validated in Phase 1 & 2*
 - **ATT-05**: Interactive Admin Dashboard showcasing attendance analytics (e.g., daily/monthly rates, class-wise stats, and notification delivery statuses). — *Validated in Phase 2*
 - **ATT-06**: Premium user interface featuring a gorgeous dark/light mode toggle, glassmorphic layout cards, custom fonts, smooth micro-animations, and full responsiveness. — *Validated in Phase 1 & 2*
@@ -24,8 +25,8 @@ Empower teachers with a highly intuitive, responsive daily attendance marking da
 
 <!-- Current scope. Building toward these. -->
 
-- [ ] **ATT-03**: Trigger real-time, personalized SMS or WhatsApp parent notifications via Twilio API when a student is marked Absent.
-
+- [ ] **DASH-01**: Interactive overview charts showing daily attendance rates and trends.
+- [ ] **DASH-02**: Key indicator cards showing total enrolled students, overall attendance rate, and today's absentees.
 
 ### Out of Scope
 
@@ -49,15 +50,15 @@ Empower teachers with a highly intuitive, responsive daily attendance marking da
 
 ## Key Decisions
 
-<!-- Decisions that constrain future work. Add throughout project lifecycle. -->
-
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
 | Next.js App Router | Delivers top-tier page performance, elegant routing structure, and ease of deployment. | ✓ Completed in Phase 1 |
 | Local JSON Storage | Eliminates external DB connection overhead and provides a zero-setup local developer environment. | ✓ Completed in Phase 1 |
 | Automatic Mock Seeding | Populates Grade 9-10 and 40 students directories instantly if JSON files are empty. | ✓ Completed in Phase 2 |
 | Interactive Status Chips | Uses color-coded (HSL) badges for Present, Absent, Late, and Leave in real-time. | ✓ Completed in Phase 2 |
-| Twilio API integration | Industry-leading standard for real-world SMS and WhatsApp notification delivery. | — Pending |
+| Twilio API Integration | Industry-leading standard for real-world SMS parent alert delivery. | ✓ Completed in Phase 3 |
+| Sandbox Fallback Log | Ensures stable development & validation environment when real credentials are absent. | ✓ Completed in Phase 3 |
+| Review & Customizer Modal | Enables teachers to preview alerts and edit baseline templates before dispatches. | ✓ Completed in Phase 3 |
 
 ## Evolution
 
@@ -77,6 +78,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-24 after Phase 2*
-
-
+*Last updated: 2026-05-24 after Phase 3*
