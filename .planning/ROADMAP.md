@@ -10,6 +10,7 @@ Aura Attendance Management System is a premium, user-centric daily attendance pl
 - [x] **Phase 2: Roster & Daily Marking** - Develop student rosters and interactive daily attendance marking tables. (completed 2026-05-24)
 - [x] **Phase 3: Twilio SMS Notifications** - Integrate the Twilio messaging API and real-time parent alert verification. (completed 2026-05-24)
 - [x] **Phase 4: Admin Analytics & Polish** - Construct analytics graphs, key metric widgets, and finalize visual transitions. (completed 2026-05-24)
+- [x] **Phase 5: Roster Directory & Attendance Ledger** - Build comprehensive rosters editing, search directories, and calendar attendance histories ledger. (completed 2026-05-24)
 
 ## Phase Details
 
@@ -75,10 +76,24 @@ Plans:
 Plans:
 - [x] 04-01: Build analytics charts, dashboard statistic cards, and polish layout visual styling.
 
+### Phase 5: Roster Directory & Attendance Ledger
+**Goal:** Implement full CRUD features for classes and student details in a dedicated Directory sub-page, and code a monthly attendance ledger calendar matrix.
+**Mode:** mvp
+**Depends on:** Phase 4
+**Requirements:** [DIR-01, DIR-02, LEDG-01]
+**Success Criteria**:
+  1. Roster Directory page `/dashboard/directory` displays all classes and student directories.
+  2. Administrators can edit and delete classroom profiles and student profiles dynamically at runtime.
+  3. Attendance Ledger calendar view aggregates attendance statuses over a selected month and class.
+**Plans:** 1/1 plan complete
+
+Plans:
+- [x] 05-01: Construct the Roster Directory page with full class/student CRUD operations and monthly Attendance Ledger calendars.
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -86,3 +101,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 2. Roster & Daily Marking | 2/2 | Complete    | 2026-05-24 |
 | 3. Twilio SMS Notifications | 2/2 | Complete    | 2026-05-24 |
 | 4. Admin Analytics & Polish | 1/1 | Complete    | 2026-05-24 |
+| 5. Roster Directory & Attendance Ledger | 1/1 | Complete    | 2026-05-24 |

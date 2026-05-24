@@ -21,22 +21,29 @@ export async function GET(request: NextRequest) {
     const classId = searchParams.get('classId');
     const date = searchParams.get('date');
     
-    if (!classId || !date) {
+    if (!classId) {
       return NextResponse.json(
-        { error: 'Missing classId or date query parameter' },
+        { error: 'Missing classId query parameter' },
         { status: 400 }
       );
     }
     
     const allAttendance = await readTable<DailyAttendance>('attendance');
-    const matchedRecord = allAttendance.find(
-      (record) =>
-        record.classId?.toLowerCase() === classId.toLowerCase() &&
-        record.date === date
-    );
     
-    // Return the records array if found, otherwise return empty array
-    return NextResponse.json(matchedRecord ? matchedRecord.records : []);
+    if (date) {
+      const matchedRecord = allAttendance.find(
+        (record) =>
+          record.classId?.toLowerCase() === classId.toLowerCase() &&
+          record.date === date
+      );
+      return NextResponse.json(matchedRecord ? matchedRecord.records : []);
+    } else {
+      const matchedRecords = allAttendance.filter(
+        (record) =>
+          record.classId?.toLowerCase() === classId.toLowerCase()
+      );
+      return NextResponse.json(matchedRecords);
+    }
   } catch (error: any) {
     console.error('API Error in GET /api/attendance:', error);
     return NextResponse.json(

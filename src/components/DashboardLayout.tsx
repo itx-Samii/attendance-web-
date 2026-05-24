@@ -83,6 +83,19 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         </svg>
       ),
     },
+    {
+      name: 'Roster & Ledger',
+      path: '/dashboard/directory',
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <line x1="23" y1="21" x2="23" y2="19" />
+          <line x1="19" y1="21" x2="19" y2="19" />
+          <line x1="21" y1="15" x2="21" y2="21" />
+        </svg>
+      ),
+    },
   ];
 
   return (
