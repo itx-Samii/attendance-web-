@@ -7,8 +7,8 @@
 
 ### Authentication & Setup
 
-- [ ] **AUTH-01**: Secure teacher login screen using local credential matching.
-- [ ] **AUTH-02**: Persist teacher session securely across page refreshes.
+- [x] **AUTH-01**: Secure teacher login screen using local credential matching.
+- [x] **AUTH-02**: Persist teacher session securely across page refreshes.
 
 ### Class & Student Rosters
 
@@ -34,7 +34,7 @@
 
 - [ ] **DASH-01**: Interactive overview charts showing daily attendance rates and trends.
 - [ ] **DASH-02**: Key indicator cards showing total enrolled students, overall attendance rate, and today's absentees.
-- [ ] **DASH-03**: Modern premium theme controller with custom Dark/Light modes, glassmorphism card panels, and smooth micro-animations.
+- [x] **DASH-03**: Modern premium theme controller with custom Dark/Light modes, glassmorphism card panels, and smooth micro-animations.
 
 ## v2 Requirements
 
@@ -60,8 +60,8 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AUTH-01 | Phase 1 | Pending |
-| AUTH-02 | Phase 1 | Pending |
+| AUTH-01 | Phase 1 | Complete |
+| AUTH-02 | Phase 1 | Complete |
 | ROST-01 | Phase 2 | Pending |
 | ROST-02 | Phase 2 | Pending |
 | ROST-03 | Phase 2 | Pending |
@@ -75,7 +75,7 @@
 | NOTF-03 | Phase 3 | Pending |
 | DASH-01 | Phase 4 | Pending |
 | DASH-02 | Phase 4 | Pending |
-| DASH-03 | Phase 1 | Pending |
+| DASH-03 | Phase 1 | Complete |
 
 **Coverage:**
 - v1 requirements: 16 total
