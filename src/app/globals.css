@@ -249,7 +249,7 @@ button, input, select, textarea {
 }
 
 .badge-late {
-  background-color: rgba(245, 158, 17) , 0.1);
+  background-color: rgba(245, 158, 17, 0.1);
   color: var(--color-warning);
 }
 
