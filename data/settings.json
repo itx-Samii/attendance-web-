@@ -1,0 +1,10 @@
+[
+  {
+    "schoolName": "Aura Academy of Excellence",
+    "twilioAccountSid": "",
+    "twilioAuthToken": "",
+    "twilioPhoneNumber": "",
+    "useSimulator": true,
+    "smsTemplate": "Dear Parent, your child {name} (Roll: {roll}) was marked Absent from class {class} on {date}. Please contact the school office."
+  }
+]

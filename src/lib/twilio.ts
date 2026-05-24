@@ -1,8 +1,5 @@
 import twilio from 'twilio';
-
-const accountSid = process.env.TWILIO_ACCOUNT_SID;
-const authToken = process.env.TWILIO_AUTH_TOKEN;
-const twilioPhone = process.env.TWILIO_PHONE_NUMBER;
+import { readTable } from './db';
 
 export interface SmsResult {
   success: boolean;
@@ -16,13 +13,33 @@ export interface SmsResult {
  * Fallbacks seamlessly to a console sandbox simulator if environment variables are blank.
  */
 export async function sendSmsAlert(to: string, body: string): Promise<SmsResult> {
-  // If Twilio keys exist, execute real API dispatches
-  if (accountSid && authToken && twilioPhone) {
+  let activeSid = process.env.TWILIO_ACCOUNT_SID || '';
+  let activeToken = process.env.TWILIO_AUTH_TOKEN || '';
+  let activePhone = process.env.TWILIO_PHONE_NUMBER || '';
+  let simulator = true;
+
+  try {
+    const settingsArr = await readTable<any>('settings');
+    if (settingsArr.length > 0) {
+      const s = settingsArr[0];
+      activeSid = s.twilioAccountSid || activeSid;
+      activeToken = s.twilioAuthToken || activeToken;
+      activePhone = s.twilioPhoneNumber || activePhone;
+      simulator = s.useSimulator !== undefined ? s.useSimulator : simulator;
+    } else {
+      simulator = !activeSid;
+    }
+  } catch (err) {
+    console.error('Failed to load dynamic database settings in Twilio service:', err);
+    simulator = !activeSid;
+  }
+
+  if (!simulator && activeSid && activeToken && activePhone) {
     try {
-      const client = twilio(accountSid, authToken);
+      const client = twilio(activeSid, activeToken);
       const message = await client.messages.create({
         body,
-        from: twilioPhone,
+        from: activePhone,
         to,
       });
       return {

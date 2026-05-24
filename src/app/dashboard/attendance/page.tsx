@@ -40,7 +40,7 @@ export default function AttendanceMarkingPage() {
   // Phase 3 States: Review Modal, customizable templates, and absentees
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [alertTemplate, setAlertTemplate] = useState(
-    'Dear Parent, your child {student_name} (Roll: {roll_number}) was marked ABSENT from {class_name} today ({date}). Please contact the administration.'
+    'Dear Parent, your child {name} (Roll: {roll}) was marked ABSENT from {class} today ({date}). Please contact the administration.'
   );
   const [absenteesList, setAbsenteesList] = useState<Student[]>([]);
 
@@ -50,9 +50,9 @@ export default function AttendanceMarkingPage() {
     setSelectedDate(today);
   }, []);
 
-  // Fetch classes on load
+  // Fetch classes and settings on load
   useEffect(() => {
-    async function loadClasses() {
+    async function loadClassesAndSettings() {
       try {
         const res = await fetch('/api/classes');
         if (res.ok) {
@@ -64,11 +64,19 @@ export default function AttendanceMarkingPage() {
             setSelectedClass(data[0].classId);
           }
         }
+
+        const resSettings = await fetch('/api/settings');
+        if (resSettings.ok) {
+          const settings = await resSettings.json();
+          if (settings?.smsTemplate) {
+            setAlertTemplate(settings.smsTemplate);
+          }
+        }
       } catch (err) {
-        console.error('Failed to load classrooms:', err);
+        console.error('Failed to load classroom and settings data:', err);
       }
     }
-    loadClasses();
+    loadClassesAndSettings();
   }, [initialClassId]);
 
   // Load students and saved attendance whenever classroom or date picker changes
@@ -231,8 +239,11 @@ export default function AttendanceMarkingPage() {
     const className = classes.find((c) => c.classId === selectedClass)?.name || selectedClass;
     return alertTemplate
       .replace(/{student_name}/gi, studentName)
+      .replace(/{name}/gi, studentName)
       .replace(/{roll_number}/gi, rollNumber)
+      .replace(/{roll}/gi, rollNumber)
       .replace(/{class_name}/gi, className)
+      .replace(/{class}/gi, className)
       .replace(/{date}/gi, selectedDate);
   };
 

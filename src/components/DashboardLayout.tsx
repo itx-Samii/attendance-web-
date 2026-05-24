@@ -14,10 +14,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter();
   const [userName, setUserName] = useState<string>('Teacher');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [schoolName, setSchoolName] = useState<string>('Aura Attendance');
 
-  // Fetch logged in user profile details
+  // Fetch logged in user profile details and school configurations
   useEffect(() => {
-    async function fetchUser() {
+    async function fetchUserAndSettings() {
       try {
         const res = await fetch('/api/auth/user');
         if (res.ok) {
@@ -28,11 +29,19 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             setUserName(name);
           }
         }
+        
+        const resSettings = await fetch('/api/settings');
+        if (resSettings.ok) {
+          const settings = await resSettings.json();
+          if (settings?.schoolName) {
+            setSchoolName(settings.schoolName);
+          }
+        }
       } catch (err) {
-        console.error('Failed to load user info', err);
+        console.error('Failed to load dynamic layout data', err);
       }
     }
-    fetchUser();
+    fetchUserAndSettings();
   }, []);
 
   const handleLogout = async () => {
@@ -96,6 +105,16 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         </svg>
       ),
     },
+    {
+      name: 'System Settings',
+      path: '/dashboard/settings',
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="3" />
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+        </svg>
+      ),
+    },
   ];
 
   return (
@@ -143,7 +162,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             )}
           </button>
           <span style={{ fontWeight: 700, fontSize: '1.2rem', letterSpacing: '-0.02em', color: 'var(--color-primary)' }}>
-            AURA Attendance
+            {schoolName}
           </span>
         </div>
         <ThemeToggle />
@@ -193,7 +212,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               </div>
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <span style={{ fontWeight: 700, fontSize: '1.15rem', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
-                  Aura Attendance
+                  {schoolName}
                 </span>
                 <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 500 }}>
                   School Management ERP
