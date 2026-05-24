@@ -53,8 +53,8 @@ Empower teachers with a highly intuitive, responsive daily attendance marking da
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Next.js App Router | Delivers top-tier page performance, elegant routing structure, and ease of deployment. | — Pending |
-| Local JSON Storage | Eliminates external DB connection overhead and provides a zero-setup local developer environment. | — Pending |
+| Next.js App Router | Delivers top-tier page performance, elegant routing structure, and ease of deployment. | ✓ Completed in Phase 1 |
+| Local JSON Storage | Eliminates external DB connection overhead and provides a zero-setup local developer environment. | ✓ Completed in Phase 1 |
 | Twilio API integration | Industry-leading standard for real-world SMS and WhatsApp notification delivery. | — Pending |
 
 ## Evolution
@@ -75,4 +75,5 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-05-24 after initialization*
+*Last updated: 2026-05-24 after Phase 1*
+
