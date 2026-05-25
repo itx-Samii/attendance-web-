@@ -13,6 +13,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [userName, setUserName] = useState<string>('Teacher');
+  const [userRole, setUserRole] = useState<string>('teacher');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [schoolName, setSchoolName] = useState<string>('Aura Attendance');
 
@@ -20,14 +21,23 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   useEffect(() => {
     async function fetchUserAndSettings() {
       try {
+        let currentRole = 'teacher';
         const res = await fetch('/api/auth/user');
         if (res.ok) {
           const data = await res.json();
-          if (data?.username) {
-            // Capitalize first letter or format beautifully
-            const name = data.username.charAt(0).toUpperCase() + data.username.slice(1);
+          if (data?.user?.name) {
+            const name = data.user.name.charAt(0).toUpperCase() + data.user.name.slice(1);
             setUserName(name);
           }
+          if (data?.user?.role) {
+            currentRole = data.user.role;
+            setUserRole(currentRole);
+          }
+        }
+        
+        if (currentRole === 'superadmin') {
+          setSchoolName('Aura Platform');
+          return;
         }
         
         const resSettings = await fetch('/api/settings');
@@ -93,6 +103,18 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       ),
     },
     {
+      name: 'Leaves & Holidays',
+      path: '/dashboard/leaves',
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+          <polyline points="14 2 14 8 20 8" />
+          <line x1="16" y1="13" x2="8" y2="13" />
+          <line x1="16" y1="17" x2="8" y2="17" />
+        </svg>
+      ),
+    },
+    {
       name: 'Roster & Ledger',
       path: '/dashboard/directory',
       icon: (
@@ -112,6 +134,17 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="12" cy="12" r="3" />
           <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+        </svg>
+      ),
+      adminOnly: false,
+    },
+    {
+      name: 'Super Admin Panel',
+      path: '/dashboard/super-admin',
+      superAdminOnly: true,
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
         </svg>
       ),
     },
@@ -215,41 +248,77 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   {schoolName}
                 </span>
                 <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 500 }}>
-                  School Management ERP
+                  {userRole === 'superadmin' ? 'Platform Console' : 'School Management ERP'}
                 </span>
               </div>
             </div>
 
             {/* Navigation Options List */}
-            <nav style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {navLinks.map((link) => {
-                const isActive = pathname === link.path;
-                return (
-                  <Link
-                    key={link.path}
-                    href={link.path}
-                    onClick={() => setMobileMenuOpen(false)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px',
-                      padding: '12px 16px',
-                      borderRadius: '10px',
-                      fontWeight: isActive ? 600 : 500,
-                      color: isActive ? 'var(--color-primary)' : 'var(--text-secondary)',
-                      backgroundColor: isActive ? 'var(--background-alt)' : 'transparent',
-                      border: isActive ? '1px solid var(--border-dim)' : '1px solid transparent',
-                      transition: 'var(--transition-fast)',
-                    }}
-                    className="nav-link-hover"
-                  >
-                    <span style={{ color: isActive ? 'var(--color-primary)' : 'var(--text-muted)' }}>
-                      {link.icon}
-                    </span>
-                    {link.name}
-                  </Link>
-                );
-              })}
+            <nav style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              {navLinks
+                .filter((link) => {
+                  // Super Admin only links (Super Admin Panel)
+                  if ((link as any).superAdminOnly) {
+                    return userRole === 'superadmin';
+                  }
+                  
+                  // Settings is visible to all authenticated roles for account management
+                  if (link.path === '/dashboard/settings') {
+                    return true;
+                  }
+
+                  // Super Admins should not see standard classroom/alert links
+                  if (userRole === 'superadmin') {
+                    return false;
+                  }
+
+                  // Standard classroom features visible to teacher and admin
+                  return true;
+                })
+                .map((link) => {
+                  const isActive = pathname === link.path;
+                  const isSuperAdmin = (link as any).superAdminOnly;
+                  return (
+                    <Link
+                      key={link.path}
+                      href={link.path}
+                      onClick={() => setMobileMenuOpen(false)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        padding: '12px 16px',
+                        borderRadius: '10px',
+                        fontWeight: isActive ? 700 : 500,
+                        color: isSuperAdmin
+                          ? isActive ? '#fff' : '#f59e0b'
+                          : isActive ? 'var(--color-primary)' : 'var(--text-secondary)',
+                        backgroundColor: isSuperAdmin
+                          ? isActive ? 'linear-gradient(135deg, #f59e0b, #d97706)' : 'rgba(245,158,11,0.08)'
+                          : isActive ? 'var(--background-alt)' : 'transparent',
+                        background: isSuperAdmin && isActive
+                          ? 'linear-gradient(135deg, rgba(245,158,11,0.25), rgba(217,119,6,0.15))'
+                          : isSuperAdmin
+                          ? 'rgba(245,158,11,0.08)'
+                          : isActive ? 'var(--background-alt)' : 'transparent',
+                        border: isSuperAdmin
+                          ? `1px solid ${isActive ? 'rgba(245,158,11,0.5)' : 'rgba(245,158,11,0.2)'}`
+                          : isActive ? '1px solid var(--border-dim)' : '1px solid transparent',
+                        transition: 'var(--transition-fast)',
+                        marginTop: isSuperAdmin ? '8px' : '0',
+                      }}
+                      className={isSuperAdmin ? 'nav-link-superadmin' : 'nav-link-hover'}
+                    >
+                      <span style={{ color: isSuperAdmin ? '#f59e0b' : isActive ? 'var(--color-primary)' : 'var(--text-muted)' }}>
+                        {link.icon}
+                      </span>
+                      <span style={{ flex: 1 }}>{link.name}</span>
+                      {isSuperAdmin && (
+                        <span style={{ fontSize: '0.62rem', padding: '2px 6px', borderRadius: '4px', backgroundColor: 'rgba(245,158,11,0.2)', color: '#f59e0b', fontWeight: 800, letterSpacing: '0.05em' }}>SA</span>
+                      )}
+                    </Link>
+                  );
+                })}
             </nav>
           </div>
 
@@ -278,7 +347,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   width: '38px',
                   height: '38px',
                   borderRadius: '50%',
-                  backgroundColor: 'var(--color-accent)',
+                  backgroundColor: userRole === 'superadmin' ? '#f59e0b' : userRole === 'admin' ? '#22c55e' : 'var(--color-accent)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -293,8 +362,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {userName}
                 </span>
-                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 500 }}>
-                  School Administrator
+                <span style={{ fontSize: '0.72rem', color: userRole === 'superadmin' ? '#f59e0b' : userRole === 'admin' ? '#22c55e' : 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.02em' }}>
+                  {userRole === 'superadmin' ? '🛡️ Super Admin' : userRole === 'admin' ? '🏫 Principal' : 'Class Teacher'}
                 </span>
               </div>
             </div>
@@ -381,6 +450,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           .main-responsive {
             padding: 24px 16px !important;
           }
+        }
+        .nav-link-superadmin:hover {
+          background: rgba(245,158,11,0.15) !important;
+          color: #f59e0b !important;
+          border-color: rgba(245,158,11,0.35) !important;
+          transform: translateX(4px);
         }
         .nav-link-hover:hover {
           background-color: var(--background-alt) !important;

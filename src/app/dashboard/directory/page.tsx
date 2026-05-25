@@ -31,6 +31,8 @@ export default function RosterAndLedgerPage() {
   const [students, setStudents] = useState<Student[]>([]);
   const [selectedClassId, setSelectedClassId] = useState<string>('');
   const [loading, setLoading] = useState(true);
+  const [userRole, setUserRole] = useState<string>('teacher');
+  const [userClassId, setUserClassId] = useState<string>('');
 
   // Search/Filter states
   const [studentSearchQuery, setStudentSearchQuery] = useState('');
@@ -66,17 +68,168 @@ export default function RosterAndLedgerPage() {
   const [studentToDelete, setStudentToDelete] = useState<Student | null>(null);
   const [studentDeleting, setStudentDeleting] = useState(false);
 
+  // Create Class Modal state
+  const [createClassModalOpen, setCreateClassModalOpen] = useState(false);
+  const [newClassId, setNewClassId] = useState('');
+  const [newClassName, setNewClassName] = useState('');
+  const [classCreating, setClassCreating] = useState(false);
+  const [classCreateError, setClassCreateError] = useState('');
+
+  // Register Student Modal state
+  const [registerStudentModalOpen, setRegisterStudentModalOpen] = useState(false);
+  const [newRollNum, setNewRollNum] = useState('');
+  const [newStudName, setNewStudName] = useState('');
+  const [newParentPhone, setNewParentPhone] = useState('');
+  const [newClassIdAssign, setNewClassIdAssign] = useState('');
+  const [studentRegistering, setStudentRegistering] = useState(false);
+  const [studentRegisterError, setStudentRegisterError] = useState('');
+
+  // QR Pass Modal state
+  const [qrPassModalOpen, setQrPassModalOpen] = useState(false);
+  const [qrPassStudent, setQrPassStudent] = useState<Student | null>(null);
+
+  const handleOpenQrPass = (stud: Student) => {
+    setQrPassStudent(stud);
+    setQrPassModalOpen(true);
+  };
+
+  const renderQrSvg = (studentId: string) => {
+    const size = 21; // 21x21 QR Grid
+    const cells = [];
+    let hash = 0;
+    for (let i = 0; i < studentId.length; i++) {
+      hash = studentId.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    
+    for (let r = 0; r < size; r++) {
+      for (let c = 0; c < size; c++) {
+        const isTopLeft = r < 7 && c < 7;
+        const isTopRight = r < 7 && c >= size - 7;
+        const isBottomLeft = r >= size - 7 && c < 7;
+        
+        let isDark = false;
+        
+        if (isTopLeft) {
+          isDark = r === 0 || r === 6 || c === 0 || c === 6 || (r >= 2 && r <= 4 && c >= 2 && c <= 4);
+        } else if (isTopRight) {
+          isDark = r === 0 || r === 6 || c === size - 1 || c === size - 7 || (r >= 2 && r <= 4 && c >= size - 5 && c <= size - 3);
+        } else if (isBottomLeft) {
+          isDark = r === size - 1 || r === size - 7 || c === 0 || c === 6 || (r >= size - 5 && r <= size - 3 && c >= 2 && c <= 4);
+        } else {
+          const bit = Math.abs((hash ^ (r * 13 + c * 37)) % 100);
+          isDark = bit < 45;
+        }
+        
+        if (isDark) {
+          cells.push(
+            <rect
+              key={`${r}-${c}`}
+              x={c * 8}
+              y={r * 8}
+              width={8}
+              height={8}
+              fill="#1e1b4b"
+            />
+          );
+        }
+      }
+    }
+    
+    return (
+      <svg width="168" height="168" viewBox="0 0 168 168" style={{ background: '#fff', padding: '8px', borderRadius: '6px' }}>
+        {cells}
+      </svg>
+    );
+  };
+
+  const handleExportRoster = () => {
+    if (students.length === 0) return;
+    const headers = ['Roll Number', 'Full Name', 'Parent Contact', 'Section Name'];
+    const rows = students.map((s) => [
+      s.rollNumber,
+      s.name,
+      s.parentPhone,
+      classes.find((c) => c.classId === selectedClassId)?.name || selectedClassId
+    ]);
+    
+    const csvContent = "data:text/csv;charset=utf-8," 
+      + [headers.join(','), ...rows.map(e => e.map(val => `"${val}"`).join(','))].join('\n');
+      
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `roster_${selectedClassId}_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleExportLedger = () => {
+    if (students.length === 0) return;
+    
+    const getDaysInMonth = (y: number, m: number) => new Date(y, m + 1, 0).getDate();
+    const daysCount = getDaysInMonth(selectedYear, selectedMonth);
+    const daysArray = Array.from({ length: daysCount }, (_, i) => i + 1);
+
+    const headers = ['Student Name', 'Roll Number', ...daysArray.map(d => `${selectedYear}-${String(selectedMonth + 1).padStart(2,'0')}-${String(d).padStart(2,'0')}`)];
+    
+    const rows = students.map((s) => {
+      const studentRow = [s.name, s.rollNumber];
+      daysArray.forEach((day) => {
+        const dateStr = `${selectedYear}-${String(selectedMonth + 1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+        const daily = ledgerAttendance.find((a) => a.date === dateStr);
+        const record = daily?.records?.find((r) => r.rollNumber === s.rollNumber);
+        studentRow.push(record ? record.status : '-');
+      });
+      return studentRow;
+    });
+    
+    const csvContent = "data:text/csv;charset=utf-8," 
+      + [headers.join(','), ...rows.map(e => e.map(val => `"${val}"`).join(','))].join('\n');
+      
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `ledger_${selectedClassId}_${selectedYear}_${selectedMonth + 1}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   // Load Classes & Initial Students
   const loadInitialData = async () => {
     try {
       setLoading(true);
+      
+      // 1. Fetch user session configuration
+      let uRole = 'teacher';
+      let uClassId = '';
+      const resUser = await fetch('/api/auth/user');
+      if (resUser.ok) {
+        const userData = await resUser.json();
+        uRole = userData?.user?.role || 'teacher';
+        uClassId = userData?.user?.classId || '';
+      }
+      setUserRole(uRole);
+      setUserClassId(uClassId);
+      if (uRole !== 'admin' && uClassId) {
+        setNewClassIdAssign(uClassId);
+      }
+
+      // 2. Fetch all classes
       const resClasses = await fetch('/api/classes');
       const dataClasses = await resClasses.json();
-      setClasses(dataClasses);
+      
+      // 3. Apply class filtration for teachers
+      const filteredClasses = uRole === 'admin' 
+        ? dataClasses 
+        : dataClasses.filter((c: any) => c.classId === uClassId);
+        
+      setClasses(filteredClasses);
 
-      if (dataClasses.length > 0) {
+      if (filteredClasses.length > 0) {
         // Automatically select the first class if none selected yet
-        const defaultClassId = selectedClassId || dataClasses[0].classId;
+        const defaultClassId = selectedClassId || filteredClasses[0].classId;
         setSelectedClassId(defaultClassId);
         await loadStudents(defaultClassId);
         if (activeTab === 'ledger') {
@@ -262,6 +415,77 @@ export default function RosterAndLedgerPage() {
     }
   };
 
+  const handleCreateClass = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newClassId.trim() || !newClassName.trim()) {
+      setClassCreateError('Please enter both Section Code and Class Name.');
+      return;
+    }
+    try {
+      setClassCreating(true);
+      setClassCreateError('');
+      const res = await fetch('/api/classes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ classId: newClassId.trim(), name: newClassName.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setCreateClassModalOpen(false);
+        setNewClassId('');
+        setNewClassName('');
+        await loadInitialData();
+      } else {
+        setClassCreateError(data.error || 'Failed to create classroom.');
+      }
+    } catch (err) {
+      setClassCreateError('An unexpected error occurred.');
+    } finally {
+      setClassCreating(false);
+    }
+  };
+
+  const handleRegisterStudent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newRollNum.trim() || !newStudName.trim() || !newParentPhone.trim() || !newClassIdAssign) {
+      setStudentRegisterError('Please complete all fields.');
+      return;
+    }
+    try {
+      setStudentRegistering(true);
+      setStudentRegisterError('');
+      const res = await fetch('/api/students', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          rollNumber: newRollNum.trim(),
+          name: newStudName.trim(),
+          parentPhone: newParentPhone.trim(),
+          classId: newClassIdAssign,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setRegisterStudentModalOpen(false);
+        setNewRollNum('');
+        setNewStudName('');
+        setNewParentPhone('');
+        // Refresh roster
+        if (newClassIdAssign === selectedClassId) {
+          await loadStudents(selectedClassId);
+        } else {
+          setSelectedClassId(newClassIdAssign);
+        }
+      } else {
+        setStudentRegisterError(data.error || 'Failed to register student.');
+      }
+    } catch (err) {
+      setStudentRegisterError('An unexpected error occurred.');
+    } finally {
+      setStudentRegistering(false);
+    }
+  };
+
   // Helper: Month days listing
   const getDaysInMonth = (month: number, year: number) => {
     return new Date(year, month + 1, 0).getDate();
@@ -351,9 +575,30 @@ export default function RosterAndLedgerPage() {
           <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: '24px', alignItems: 'start' }}>
             {/* Sidebar: Class List */}
             <div className="glass-panel" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px', border: '1px solid var(--border-dim)' }}>
-              <h2 style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0 }}>
-                Classroom Sections
-              </h2>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                <h2 style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0 }}>
+                  Classroom Sections
+                </h2>
+                {userRole === 'admin' && (
+                  <button
+                    onClick={() => setCreateClassModalOpen(true)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      color: 'var(--color-primary)',
+                      fontSize: '0.82rem',
+                      fontWeight: 700,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                    }}
+                    title="Create Class Section"
+                  >
+                    + Add
+                  </button>
+                )}
+              </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {classes.map((cls) => {
                   const isActive = selectedClassId === cls.classId;
@@ -385,49 +630,51 @@ export default function RosterAndLedgerPage() {
                       </div>
 
                       {/* Small Quick Action Buttons on hover/active */}
-                      <div style={{ display: 'flex', gap: '4px' }}>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleOpenEditClass(cls);
-                          }}
-                          style={{
-                            background: 'none',
-                            border: 'none',
-                            cursor: 'pointer',
-                            color: 'var(--text-muted)',
-                            padding: '4px',
-                            display: 'flex',
-                            alignItems: 'center',
-                          }}
-                          title="Edit Class Section"
-                        >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                            <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-                          </svg>
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleOpenDeleteClass(cls);
-                          }}
-                          style={{
-                            background: 'none',
-                            border: 'none',
-                            cursor: 'pointer',
-                            color: 'var(--color-danger)',
-                            padding: '4px',
-                            display: 'flex',
-                            alignItems: 'center',
-                          }}
-                          title="Delete Classroom"
-                        >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                            <polyline points="3 6 5 6 21 6" />
-                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                          </svg>
-                        </button>
-                      </div>
+                      {userRole === 'admin' && (
+                        <div style={{ display: 'flex', gap: '4px' }}>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpenEditClass(cls);
+                            }}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              cursor: 'pointer',
+                              color: 'var(--text-muted)',
+                              padding: '4px',
+                              display: 'flex',
+                              alignItems: 'center',
+                            }}
+                            title="Edit Class Section"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                              <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpenDeleteClass(cls);
+                            }}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              cursor: 'pointer',
+                              color: 'var(--color-danger)',
+                              padding: '4px',
+                              display: 'flex',
+                              alignItems: 'center',
+                            }}
+                            title="Delete Classroom"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                              <polyline points="3 6 5 6 21 6" />
+                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                            </svg>
+                          </button>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -449,24 +696,68 @@ export default function RosterAndLedgerPage() {
                       </p>
                     </div>
 
-                    {/* Quick Search */}
-                    <input
-                      type="text"
-                      placeholder="Search students..."
-                      value={studentSearchQuery}
-                      onChange={(e) => setStudentSearchQuery(e.target.value)}
-                      style={{
-                        padding: '8px 12px',
-                        borderRadius: '6px',
-                        border: '1px solid var(--border-dim)',
-                        backgroundColor: 'var(--background-alt)',
-                        color: 'var(--text-primary)',
-                        fontSize: '0.82rem',
-                        fontWeight: 500,
-                        outline: 'none',
-                        width: '200px',
-                      }}
-                    />
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      <button
+                        onClick={() => {
+                          setRegisterStudentModalOpen(true);
+                          if (selectedClassId) {
+                            setNewClassIdAssign(selectedClassId);
+                          }
+                        }}
+                        style={{
+                          padding: '8px 14px',
+                          borderRadius: '6px',
+                          fontSize: '0.8rem',
+                          fontWeight: 600,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          backgroundColor: 'rgba(79, 70, 229, 0.12)',
+                          color: 'var(--color-primary)',
+                          border: '1px solid rgba(79, 70, 229, 0.2)',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        + Add Student
+                      </button>
+                      <button
+                        onClick={handleExportRoster}
+                        style={{
+                          padding: '8px 14px',
+                          borderRadius: '6px',
+                          fontSize: '0.8rem',
+                          fontWeight: 600,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          backgroundColor: 'rgba(34, 197, 94, 0.12)',
+                          color: '#22c55e',
+                          border: '1px solid rgba(34, 197, 94, 0.2)',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        📥 Export CSV
+                      </button>
+
+                      {/* Quick Search */}
+                      <input
+                        type="text"
+                        placeholder="Search students..."
+                        value={studentSearchQuery}
+                        onChange={(e) => setStudentSearchQuery(e.target.value)}
+                        style={{
+                          padding: '8px 12px',
+                          borderRadius: '6px',
+                          border: '1px solid var(--border-dim)',
+                          backgroundColor: 'var(--background-alt)',
+                          color: 'var(--text-primary)',
+                          fontSize: '0.82rem',
+                          fontWeight: 500,
+                          outline: 'none',
+                          width: '180px',
+                        }}
+                      />
+                    </div>
                   </div>
 
                   {filteredStudents.length === 0 ? (
@@ -500,6 +791,23 @@ export default function RosterAndLedgerPage() {
                               </td>
                               <td style={{ padding: '14px 8px', textAlign: 'right' }}>
                                 <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                                  <button
+                                    onClick={() => handleOpenQrPass(stud)}
+                                    style={{
+                                      padding: '6px 12px',
+                                      borderRadius: '6px',
+                                      border: '1px solid var(--border-dim)',
+                                      backgroundColor: 'var(--background-alt)',
+                                      color: 'var(--color-primary)',
+                                      fontSize: '0.78rem',
+                                      fontWeight: 600,
+                                      cursor: 'pointer',
+                                      transition: 'var(--transition-smooth)',
+                                    }}
+                                    className="quick-btn-hover"
+                                  >
+                                    View QR Pass
+                                  </button>
                                   <button
                                     onClick={() => handleOpenEditStudent(stud)}
                                     style={{
@@ -557,7 +865,27 @@ export default function RosterAndLedgerPage() {
                     </div>
 
                     {/* Month/Year selectors */}
-                    <div style={{ display: 'flex', gap: '10px' }}>
+                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                      <button
+                        onClick={handleExportLedger}
+                        style={{
+                          padding: '8px 14px',
+                          borderRadius: '6px',
+                          fontSize: '0.8rem',
+                          fontWeight: 600,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          backgroundColor: 'rgba(34, 197, 94, 0.12)',
+                          color: '#22c55e',
+                          border: '1px solid rgba(34, 197, 94, 0.2)',
+                          cursor: 'pointer',
+                          marginRight: '8px',
+                        }}
+                      >
+                        📥 Export CSV
+                      </button>
+
                       <select
                         value={selectedMonth}
                         onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
@@ -849,6 +1177,7 @@ export default function RosterAndLedgerPage() {
                       value={studentToEdit.rollNumber.toUpperCase()}
                       disabled
                       style={{
+                        width: '100%',
                         padding: '10px 14px',
                         borderRadius: '8px',
                         backgroundColor: 'var(--background-alt)',
@@ -859,12 +1188,13 @@ export default function RosterAndLedgerPage() {
                       }}
                     />
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', overflow: 'hidden' }}>
                     <label style={{ fontSize: '0.74rem', fontWeight: 600, color: 'var(--text-muted)' }}>CLASS SECTION</label>
                     <select
                       value={editStudentClassIdVal}
                       onChange={(e) => setEditStudentClassIdVal(e.target.value)}
                       style={{
+                        width: '100%',
                         padding: '10px 14px',
                         borderRadius: '8px',
                         backgroundColor: 'var(--background-alt)',
@@ -874,6 +1204,7 @@ export default function RosterAndLedgerPage() {
                         fontWeight: 500,
                         outline: 'none',
                         cursor: 'pointer',
+                        textOverflow: 'ellipsis',
                       }}
                     >
                       {classes.map((c) => (
@@ -892,6 +1223,7 @@ export default function RosterAndLedgerPage() {
                     value={editStudentNameVal}
                     onChange={(e) => setEditStudentNameVal(e.target.value)}
                     style={{
+                      width: '100%',
                       padding: '10px 14px',
                       borderRadius: '8px',
                       backgroundColor: 'var(--background-alt)',
@@ -911,6 +1243,7 @@ export default function RosterAndLedgerPage() {
                     value={editStudentPhoneVal}
                     onChange={(e) => setEditStudentPhoneVal(e.target.value)}
                     style={{
+                      width: '100%',
                       padding: '10px 14px',
                       borderRadius: '8px',
                       backgroundColor: 'var(--background-alt)',
@@ -992,6 +1325,290 @@ export default function RosterAndLedgerPage() {
                   {studentDeleting ? 'Deleting...' : 'Delete Profile'}
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* MODAL 5: Student Attendance QR Pass Code */}
+        {qrPassModalOpen && qrPassStudent && (
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
+            <div className="glass-panel" style={{ padding: '28px', width: '380px', display: 'flex', flexDirection: 'column', gap: '20px', border: '1px solid var(--border-dim)', position: 'relative' }}>
+              <button
+                onClick={() => setQrPassModalOpen(false)}
+                style={{
+                  position: 'absolute',
+                  top: '16px',
+                  right: '16px',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: 'var(--text-muted)',
+                }}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+
+              <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 850, letterSpacing: '-0.02em', margin: 0 }}>
+                  🏫 Student Attendance Pass
+                </h3>
+                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 650, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Aura Academy of Excellence
+                </span>
+              </div>
+
+              {/* QR Code Container */}
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '16px', backgroundColor: 'var(--background-alt)', borderRadius: '12px', border: '1px solid var(--border-dim)' }}>
+                {renderQrSvg(qrPassStudent.rollNumber)}
+              </div>
+
+              {/* Student Metadata Card */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', backgroundColor: 'rgba(255,255,255,0.01)', padding: '16px', borderRadius: '10px', border: '1px solid var(--border-dim)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)' }}>Student Name:</span>
+                  <span style={{ fontSize: '0.82rem', fontWeight: 750 }}>{qrPassStudent.name}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)' }}>Roll Number:</span>
+                  <span style={{ fontSize: '0.82rem', fontWeight: 700, fontFamily: 'monospace' }}>{qrPassStudent.rollNumber.toUpperCase()}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)' }}>Classroom Section:</span>
+                  <span style={{ fontSize: '0.82rem', fontWeight: 650 }}>{classes.find(c => c.classId === qrPassStudent.classId)?.name || 'Grade Section'}</span>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setQrPassModalOpen(false)}
+                className="btn-primary"
+                style={{
+                  padding: '12px',
+                  borderRadius: '8px',
+                  fontWeight: 650,
+                  fontSize: '0.88rem',
+                  cursor: 'pointer',
+                  border: 'none',
+                }}
+              >
+                Close Pass Portal
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* MODAL 6: Create Class Section */}
+        {createClassModalOpen && (
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
+            <div className="glass-panel" style={{ padding: '24px', width: '400px', display: 'flex', flexDirection: 'column', gap: '16px', border: '1px solid var(--border-dim)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h3 style={{ fontSize: '1.05rem', fontWeight: 800, margin: 0 }}>Create Class Section</h3>
+                <button
+                  onClick={() => setCreateClassModalOpen(false)}
+                  style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '1.2rem', cursor: 'pointer' }}
+                >
+                  &times;
+                </button>
+              </div>
+
+              <form onSubmit={handleCreateClass} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                {classCreateError && <div style={{ fontSize: '0.8rem', color: 'var(--color-danger)', fontWeight: 600 }}>{classCreateError}</div>}
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.74rem', fontWeight: 600, color: 'var(--text-muted)' }}>SECTION CODE</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 11a"
+                    value={newClassId}
+                    onChange={(e) => setNewClassId(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '10px 14px',
+                      borderRadius: '8px',
+                      backgroundColor: 'var(--background-alt)',
+                      border: '1px solid var(--border-dim)',
+                      color: 'var(--text-primary)',
+                      fontSize: '0.88rem',
+                      fontWeight: 500,
+                      outline: 'none',
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.74rem', fontWeight: 600, color: 'var(--text-muted)' }}>CLASS NAME</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Grade 11 - Section A"
+                    value={newClassName}
+                    onChange={(e) => setNewClassName(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '10px 14px',
+                      borderRadius: '8px',
+                      backgroundColor: 'var(--background-alt)',
+                      border: '1px solid var(--border-dim)',
+                      color: 'var(--text-primary)',
+                      fontSize: '0.88rem',
+                      fontWeight: 500,
+                      outline: 'none',
+                    }}
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={classCreating}
+                  style={{
+                    padding: '12px',
+                    borderRadius: '8px',
+                    backgroundColor: 'var(--color-primary)',
+                    color: '#fff',
+                    fontWeight: 600,
+                    fontSize: '0.9rem',
+                    border: 'none',
+                    cursor: 'pointer',
+                    transition: 'var(--transition-smooth)',
+                  }}
+                  className="quick-btn-hover"
+                >
+                  {classCreating ? 'Registering Section...' : 'Register Section'}
+                </button>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* MODAL 7: Register Student Profile */}
+        {registerStudentModalOpen && (
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
+            <div className="glass-panel" style={{ padding: '24px', width: '400px', display: 'flex', flexDirection: 'column', gap: '16px', border: '1px solid var(--border-dim)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h3 style={{ fontSize: '1.05rem', fontWeight: 800, margin: 0 }}>Register Student Profile</h3>
+                <button
+                  onClick={() => setRegisterStudentModalOpen(false)}
+                  style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '1.2rem', cursor: 'pointer' }}
+                >
+                  &times;
+                </button>
+              </div>
+
+              <form onSubmit={handleRegisterStudent} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                {studentRegisterError && <div style={{ fontSize: '0.8rem', color: 'var(--color-danger)', fontWeight: 600 }}>{studentRegisterError}</div>}
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <label style={{ fontSize: '0.74rem', fontWeight: 600, color: 'var(--text-muted)' }}>ROLL NUMBER</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. 11A-01"
+                      value={newRollNum}
+                      onChange={(e) => setNewRollNum(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '10px 14px',
+                        borderRadius: '8px',
+                        backgroundColor: 'var(--background-alt)',
+                        border: '1px solid var(--border-dim)',
+                        color: 'var(--text-primary)',
+                        fontSize: '0.88rem',
+                        fontWeight: 500,
+                        outline: 'none',
+                      }}
+                    />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', overflow: 'hidden' }}>
+                    <label style={{ fontSize: '0.74rem', fontWeight: 600, color: 'var(--text-muted)' }}>CLASS SECTION</label>
+                    <select
+                      value={newClassIdAssign}
+                      onChange={(e) => setNewClassIdAssign(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '10px 14px',
+                        borderRadius: '8px',
+                        backgroundColor: 'var(--background-alt)',
+                        border: '1px solid var(--border-dim)',
+                        color: 'var(--text-primary)',
+                        fontSize: '0.88rem',
+                        fontWeight: 500,
+                        outline: 'none',
+                        cursor: 'pointer',
+                        textOverflow: 'ellipsis',
+                      }}
+                    >
+                      <option value="">Select...</option>
+                      {classes.map((c) => (
+                        <option key={c.classId} value={c.classId}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.74rem', fontWeight: 600, color: 'var(--text-muted)' }}>STUDENT FULL NAME</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Sarah Connor"
+                    value={newStudName}
+                    onChange={(e) => setNewStudName(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '10px 14px',
+                      borderRadius: '8px',
+                      backgroundColor: 'var(--background-alt)',
+                      border: '1px solid var(--border-dim)',
+                      color: 'var(--text-primary)',
+                      fontSize: '0.88rem',
+                      fontWeight: 500,
+                      outline: 'none',
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '0.74rem', fontWeight: 600, color: 'var(--text-muted)' }}>PARENT MOBILE (E.164)</label>
+                  <input
+                    type="tel"
+                    placeholder="e.g. +15550100099"
+                    value={newParentPhone}
+                    onChange={(e) => setNewParentPhone(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '10px 14px',
+                      borderRadius: '8px',
+                      backgroundColor: 'var(--background-alt)',
+                      border: '1px solid var(--border-dim)',
+                      color: 'var(--text-primary)',
+                      fontSize: '0.88rem',
+                      fontWeight: 500,
+                      outline: 'none',
+                    }}
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={studentRegistering}
+                  style={{
+                    padding: '12px',
+                    borderRadius: '8px',
+                    backgroundColor: 'var(--color-primary)',
+                    color: '#fff',
+                    fontWeight: 600,
+                    fontSize: '0.9rem',
+                    border: 'none',
+                    cursor: 'pointer',
+                    transition: 'var(--transition-smooth)',
+                  }}
+                  className="quick-btn-hover"
+                >
+                  {studentRegistering ? 'Registering Student...' : 'Register Student'}
+                </button>
+              </form>
             </div>
           </div>
         )}

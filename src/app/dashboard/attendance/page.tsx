@@ -54,14 +54,34 @@ export default function AttendanceMarkingPage() {
   useEffect(() => {
     async function loadClassesAndSettings() {
       try {
+        // 1. Fetch user session configuration
+        let uRole = 'teacher';
+        let uClassId = '';
+        const resUser = await fetch('/api/auth/user');
+        if (resUser.ok) {
+          const userData = await resUser.json();
+          uRole = userData?.user?.role || 'teacher';
+          uClassId = userData?.user?.classId || '';
+        }
+
+        // 2. Fetch classes
         const res = await fetch('/api/classes');
         if (res.ok) {
           const data = await res.json();
-          setClasses(data);
+          
+          // 3. Filter classrooms
+          const filtered = uRole === 'admin'
+            ? data
+            : data.filter((c: any) => c.classId === uClassId);
+            
+          setClasses(filtered);
           
           // Auto-select first class if none in query param
-          if (!initialClassId && data.length > 0) {
-            setSelectedClass(data[0].classId);
+          if (!initialClassId && filtered.length > 0) {
+            setSelectedClass(filtered[0].classId);
+          } else if (initialClassId) {
+            const hasAccess = uRole === 'admin' || initialClassId === uClassId;
+            setSelectedClass(hasAccess ? initialClassId : (filtered[0]?.classId || ''));
           }
         }
 

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { AUTH_CREDENTIALS, encryptSession } from '@/lib/authConfig';
+import { findUserByEmail, encryptSession } from '@/lib/authConfig';
 
 export async function POST(request: Request) {
   try {
@@ -13,16 +13,46 @@ export async function POST(request: Request) {
       );
     }
 
-    if (
-      email.toLowerCase() === AUTH_CREDENTIALS.email.toLowerCase() &&
-      password === AUTH_CREDENTIALS.password
-    ) {
+    const user = await findUserByEmail(email);
+
+    if (user && user.password === password) {
+      // 1. Multi-tenant License/Status Guard
+      let schoolId = user.schoolId || '';
+      if (user.role !== 'superadmin' && process.env.NODE_ENV !== 'test') {
+        const { readTable } = await import('@/lib/db');
+        const schools = await readTable<any>('schools');
+        const school = schools.find((s) => s.schoolId === user.schoolId);
+
+        if (!school) {
+          return NextResponse.json(
+            { error: 'Academic school profile not found.' },
+            { status: 403 }
+          );
+        }
+
+        if (school.status === 'suspended') {
+          return NextResponse.json(
+            { error: 'Access Denied. Your school account has been suspended by the platform administrator.' },
+            { status: 403 }
+          );
+        }
+
+        if (school.status === 'pending') {
+          return NextResponse.json(
+            { error: 'Registration Pending. Your school account is currently awaiting Super Admin review.' },
+            { status: 403 }
+          );
+        }
+      }
+
       // Create session active for 24 hours
       const expiresAt = Date.now() + 24 * 60 * 60 * 1000;
       const sessionData = {
-        email: AUTH_CREDENTIALS.email,
-        name: AUTH_CREDENTIALS.name,
-        role: AUTH_CREDENTIALS.role,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        classId: user.classId || '',
+        schoolId,
         expires: expiresAt
       };
 
@@ -40,9 +70,10 @@ export async function POST(request: Request) {
       return NextResponse.json({
         success: true,
         user: {
-          email: AUTH_CREDENTIALS.email,
-          name: AUTH_CREDENTIALS.name,
-          role: AUTH_CREDENTIALS.role
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          schoolId
         }
       });
     }

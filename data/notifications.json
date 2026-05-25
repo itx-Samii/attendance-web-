@@ -1,5 +1,77 @@
 [
   {
+    "classId": "9b",
+    "date": "2026-05-25",
+    "rollNumber": "9b-101",
+    "studentName": "talal",
+    "parentPhone": "+923495551004",
+    "message": "Dear Parent, your child talal (Roll: 9b-101) was marked Absent from class Grade 9 - Section B on 2026-05-25. Please contact the school office.",
+    "status": "Sent",
+    "sid": "true_187982195744958@lid_3EB0FB45C32B2E1FDD1AC7",
+    "timestamp": "2026-05-25T07:25:24.164Z",
+    "schoolId": "school-aura"
+  },
+  {
+    "classId": "9b",
+    "date": "2026-05-25",
+    "rollNumber": "9b-101",
+    "studentName": "talal",
+    "parentPhone": "+923495551004",
+    "message": "Dear Parent, your child talal (Roll: 9b-101) was marked Absent from class Grade 9 - Section B on 2026-05-25. Please contact the school office.",
+    "status": "Sent",
+    "sid": "true_187982195744958@lid_3EB0295B9A899B13A4369E",
+    "timestamp": "2026-05-25T07:23:06.204Z",
+    "schoolId": "school-aura"
+  },
+  {
+    "classId": "9b",
+    "date": "2026-05-25",
+    "rollNumber": "9b-101",
+    "studentName": "talal",
+    "parentPhone": "+923495551004",
+    "message": "Dear Parent, your child talal (Roll: 9b-101) was marked Absent from class Grade 9 - Section B on 2026-05-25. Please contact the school office.",
+    "status": "Failed",
+    "sid": "",
+    "timestamp": "2026-05-25T07:20:22.191Z",
+    "schoolId": "school-aura"
+  },
+  {
+    "classId": "9b",
+    "date": "2026-05-25",
+    "rollNumber": "9b-101",
+    "studentName": "talal",
+    "parentPhone": "+923495551004",
+    "message": "Dear Parent, your child talal (Roll: 9b-101) was marked Absent from class Grade 9 - Section B on 2026-05-25. Please contact the school office.",
+    "status": "Simulator",
+    "sid": "WAXNQFCRJ6C",
+    "timestamp": "2026-05-25T07:19:27.018Z",
+    "schoolId": "school-aura"
+  },
+  {
+    "classId": "9b",
+    "date": "2026-05-25",
+    "rollNumber": "9b-101",
+    "studentName": "talal",
+    "parentPhone": "+923495551004",
+    "message": "Dear Parent, your child talal (Roll: 9b-101) was marked Absent from class Grade 9 - Section B on 2026-05-25. Please contact the school office.",
+    "status": "Simulator",
+    "sid": "WAA9OEIOGAY",
+    "timestamp": "2026-05-25T07:11:30.135Z",
+    "schoolId": "school-aura"
+  },
+  {
+    "classId": "9a",
+    "date": "2026-05-25",
+    "rollNumber": "9a-101",
+    "studentName": "talal",
+    "parentPhone": "+923495999656",
+    "message": "Dear Parent, your child talal (Roll: 9a-101) was marked Absent from class Grade 9 - Section A on 2026-05-25. Please contact the school office.",
+    "status": "Simulator",
+    "sid": "WAELKZEHTDS",
+    "timestamp": "2026-05-25T07:02:41.702Z",
+    "schoolId": "school-aura"
+  },
+  {
     "classId": "9a",
     "date": "2026-05-24",
     "rollNumber": "9A-01",
@@ -8,7 +80,8 @@
     "message": "Dear Parent, your child Aiden Smith (Roll: 9A-01) was marked ABSENT from Grade 9 - Section A today (2026-05-24). Please call back soon.",
     "status": "Simulator",
     "sid": "SMY2OV42ZC9",
-    "timestamp": "2026-05-24T09:57:08.993Z"
+    "timestamp": "2026-05-24T09:57:08.993Z",
+    "schoolId": "school-aura"
   },
   {
     "classId": "9a",
@@ -19,7 +92,8 @@
     "message": "Dear Parent, your child Diana Miller (Roll: 9A-04) was marked ABSENT from Grade 9 - Section A today (2026-05-24). Please call back soon.",
     "status": "Simulator",
     "sid": "SMOA0O3P904",
-    "timestamp": "2026-05-24T09:57:09.016Z"
+    "timestamp": "2026-05-24T09:57:09.016Z",
+    "schoolId": "school-aura"
   },
   {
     "classId": "9a",
@@ -30,7 +104,8 @@
     "message": "Dear Parent, your child Aiden Smith (Roll: 9A-01) was marked ABSENT from Grade 9 - Section A today (2026-05-24). Please contact the administration.",
     "status": "Simulator",
     "sid": "SM7FTFBGDYV",
-    "timestamp": "2026-05-24T09:56:36.482Z"
+    "timestamp": "2026-05-24T09:56:36.482Z",
+    "schoolId": "school-aura"
   },
   {
     "classId": "9a",
@@ -41,7 +116,8 @@
     "message": "Dear Parent, your child Bella Johnson (Roll: 9A-02) was marked ABSENT from Grade 9 - Section A today (2026-05-24). Please contact the administration.",
     "status": "Simulator",
     "sid": "SM2Q5Z6R2SI",
-    "timestamp": "2026-05-24T09:56:36.503Z"
+    "timestamp": "2026-05-24T09:56:36.503Z",
+    "schoolId": "school-aura"
   },
   {
     "classId": "9a",
@@ -52,6 +128,7 @@
     "message": "Dear Parent, your child Hannah Thomas (Roll: 9A-08) was marked ABSENT from Grade 9 - Section A today (2026-05-24). Please contact the administration.",
     "status": "Simulator",
     "sid": "SMZULH2KK6P",
-    "timestamp": "2026-05-24T09:56:36.528Z"
+    "timestamp": "2026-05-24T09:56:36.528Z",
+    "schoolId": "school-aura"
   }
 ]

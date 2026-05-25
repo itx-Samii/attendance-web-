@@ -1,0 +1,30 @@
+[
+  {
+    "schoolId": "school-aura",
+    "schoolName": "BloomField",
+    "principalEmail": "admin@aura.edu",
+    "status": "active",
+    "createdAt": "2026-05-25T07:05:57.008Z",
+    "useSimulator": false,
+    "whatsappEnabled": false,
+    "smsTemplate": "Dear Parent, your child {name} (Roll: {roll}) was marked Absent from class {class} on {date}. Please contact the school office.",
+    "licenseKey": "AURA-ENT-ACTIVE-9999-XXXX-2026",
+    "licenseStatus": "Active",
+    "licenseExpiry": "2027-12-31",
+    "licenseLimitClasses": 25
+  },
+  {
+    "schoolId": "school-s5xjiih",
+    "schoolName": "The BloomField Islamic School",
+    "principalEmail": "bloomfield@aura.edu",
+    "status": "active",
+    "createdAt": "2026-05-25T08:10:43.743Z",
+    "useSimulator": true,
+    "whatsappEnabled": false,
+    "smsTemplate": "Dear Parent, your child {name} (Roll: {roll}) was marked Absent from class {class} on {date}. Please contact the school office.",
+    "licenseKey": "AURA-ACTIVE-PDPJG5X",
+    "licenseStatus": "Active",
+    "licenseExpiry": "2027-05-25",
+    "licenseLimitClasses": 25
+  }
+]

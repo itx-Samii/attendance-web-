@@ -1,10 +1,12 @@
 [
   {
-    "schoolName": "Aura Academy of Excellence",
-    "twilioAccountSid": "",
-    "twilioAuthToken": "",
-    "twilioPhoneNumber": "",
+    "schoolName": "BloomField",
     "useSimulator": true,
-    "smsTemplate": "Dear Parent, your child {name} (Roll: {roll}) was marked Absent from class {class} on {date}. Please contact the school office."
+    "whatsappEnabled": false,
+    "smsTemplate": "Dear Parent, your child {name} (Roll: {roll}) was marked Absent from class {class} on {date}. Please contact the school office.",
+    "licenseKey": "AURA-ENT-ACTIVE-9999-XXXX-2026",
+    "licenseStatus": "Active",
+    "licenseExpiry": "2027-12-31",
+    "licenseLimitClasses": 25
   }
 ]

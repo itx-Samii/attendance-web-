@@ -1,0 +1,38 @@
+[
+  {
+    "email": "admin@aura.edu",
+    "password": "Admin123!",
+    "name": "Principal Aura",
+    "role": "admin",
+    "schoolId": "school-aura"
+  },
+  {
+    "email": "teacher@aura.edu",
+    "password": "Teacher123!",
+    "name": "Professor Aura",
+    "role": "teacher",
+    "classId": "9a",
+    "schoolId": "school-aura"
+  },
+  {
+    "email": "sami@aura.edu",
+    "password": "sami123",
+    "name": "Samii",
+    "role": "teacher",
+    "classId": "9b",
+    "schoolId": "school-aura"
+  },
+  {
+    "email": "superadmin@aura.edu",
+    "password": "SuperAdmin123!",
+    "name": "Platform Super Admin",
+    "role": "superadmin"
+  },
+  {
+    "email": "bloomfield@aura.edu",
+    "password": "Principal123",
+    "name": "Miss Sania Iram",
+    "role": "admin",
+    "schoolId": "school-s5xjiih"
+  }
+]

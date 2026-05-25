@@ -1,22 +1,27 @@
 [
   {
     "classId": "9a",
-    "name": "Grade 9 - Section A"
+    "name": "Grade 9 - Section A",
+    "schoolId": "school-aura"
   },
   {
     "classId": "9b",
-    "name": "Grade 9 - Section B"
+    "name": "Grade 9 - Section B",
+    "schoolId": "school-aura"
   },
   {
     "classId": "10a",
-    "name": "Grade 10 - Section A"
+    "name": "Grade 10 - Section A",
+    "schoolId": "school-aura"
   },
   {
     "classId": "10b",
-    "name": "Grade 10 - Section B"
+    "name": "Grade 10 - Section B",
+    "schoolId": "school-aura"
   },
   {
     "classId": "11a",
-    "name": "Grade 11 - Section A"
+    "name": "Grade 11 - Section A",
+    "schoolId": "school-aura"
   }
 ]
