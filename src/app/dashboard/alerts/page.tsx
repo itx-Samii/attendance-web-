@@ -82,7 +82,7 @@ export default function AlertsAuditorPage() {
             Parent Alerts Auditor Log
           </h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 500 }}>
-            Real-time auditing trail of Twilio API dispatches and sandbox simulator records.
+            Real-time auditing trail of WhatsApp dispatches and sandbox simulator records.
           </p>
         </div>
 
@@ -107,7 +107,7 @@ export default function AlertsAuditorPage() {
           {/* Card: Sent via SDK */}
           <div className="glass-panel" style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
             <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>
-              Sent via Twilio API
+              Sent via WhatsApp API
             </span>
             <span style={{ fontSize: '1.6rem', fontWeight: 700, color: 'var(--color-success)' }}>
               {stats.sent}
@@ -145,7 +145,7 @@ export default function AlertsAuditorPage() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search by student, parent contact, SID, or SMS message content..."
+              placeholder="Search by student, parent contact, SID, or WhatsApp message content..."
               style={{
                 width: '100%',
                 padding: '12px 14px 12px 42px',

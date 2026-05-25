@@ -71,7 +71,7 @@ export default function Home() {
             Next-Gen School <span style={{ color: 'var(--color-primary)' }}>Attendance ERP</span>
           </h1>
           <p className="desc-sm" style={{ fontSize: '1.125rem', maxWidth: '600px', margin: '0 auto 32px auto' }}>
-            Track daily records, manage classrooms rosters, and trigger automated Twilio SMS parent alerts instantly from one beautiful interface.
+            Track daily records, manage classrooms rosters, and trigger automated WhatsApp parent alerts instantly from one beautiful interface.
           </p>
           <div style={{ display: 'flex', gap: '16px', justifyContent: 'center' }}>
             <Link href="/login" className="btn btn-primary" style={{ padding: '14px 32px', borderRadius: '10px' }}>
