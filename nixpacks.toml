@@ -1,0 +1,6 @@
+# Railway Nixpacks configuration for Next.js & Puppeteer/Chromium support
+[phases.setup]
+nixPkgs = ['...', 'chromium']
+
+[phases.build]
+cmds = ['npm run build']

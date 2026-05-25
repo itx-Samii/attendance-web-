@@ -644,6 +644,24 @@ export default function SystemSettingsPage() {
                 </div>
               </div>
 
+              {/* Vercel Serverless environment warning */}
+              {typeof window !== 'undefined' && window.location.hostname.includes('vercel.app') && (
+                <div style={{
+                  marginBottom: '20px', padding: '14px 18px', borderRadius: '10px',
+                  backgroundColor: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.2)',
+                  fontSize: '0.82rem', color: 'var(--color-danger)', lineHeight: '1.5',
+                  display: 'flex', flexDirection: 'column', gap: '4px'
+                }}>
+                  <div style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span>⚠️</span> Vercel Cloud Serverless Limitation Detected
+                  </div>
+                  <span style={{ color: 'var(--text-secondary)' }}>
+                    Vercel serverless functions do not support running background Puppeteer web clients. 
+                    <strong> Please keep "Simulator ON" active</strong> for instant simulated dispatches on Vercel demos.
+                  </span>
+                </div>
+              )}
+
               {/* Main body: QR section or connected state */}
               {waStatus === 'ready' ? (
                 /* Connected state */
