@@ -513,7 +513,7 @@ export default function SuperAdminPanel() {
                                 {s.status === 'active' && (
                                   <button onClick={() => handleUpdateSchoolStatus(s.schoolId, 'suspended')}
                                     style={{
-                                      padding: '6px 12px', borderRadius: '6px', border: 'none', cursor: 'pointer',
+                                      padding: '6px 12px', borderRadius: '6px', cursor: 'pointer',
                                       backgroundColor: 'rgba(239,68,68,0.1)', color: '#ef4444', fontSize: '0.78rem', fontWeight: 700,
                                       border: '1px solid rgba(239,68,68,0.2)',
                                     }}>

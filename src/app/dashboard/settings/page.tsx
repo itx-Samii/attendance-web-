@@ -1048,7 +1048,7 @@ export default function SystemSettingsPage() {
             </div>
 
             {/* Super Admin Control Actions Card */}
-            {userRole === 'superadmin' && (
+            {(userRole as string) === 'superadmin' && (
               <div className="glass-panel" style={{ padding: '28px', border: '1px solid var(--border-dim)' }}>
                 <h2 style={{ fontSize: '1.15rem', fontWeight: 800, letterSpacing: '-0.02em', margin: '0 0 20px 0', display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <span style={{ color: 'var(--color-primary)' }}>🛠️</span> Super Admin Licensing Control
