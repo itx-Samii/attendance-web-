@@ -314,7 +314,22 @@ export async function sendWhatsAppAlert(to: string, body: string, schoolId?: str
   // ── Real WhatsApp send ───────────────────────────────────────────────────
   if (!useSimulator && clientReady) {
     try {
-      const chatId = toWhatsAppId(to);
+      const digits = to.replace(/\D/g, '');
+      console.log(`[WhatsApp - ${targetSchoolId}] Resolving JID/LID for number: ${digits}`);
+      
+      let chatId = `${digits}@c.us`;
+      try {
+        const resolvedId = await client.getNumberId(digits);
+        if (resolvedId && resolvedId._serialized) {
+          chatId = resolvedId._serialized;
+          console.log(`[WhatsApp - ${targetSchoolId}] Successfully resolved JID/LID: ${chatId}`);
+        } else {
+          console.warn(`[WhatsApp - ${targetSchoolId}] getNumberId returned null for ${digits}. Using default format.`);
+        }
+      } catch (resErr: any) {
+        console.warn(`[WhatsApp - ${targetSchoolId}] Failed to resolve JID/LID via getNumberId:`, resErr?.message || resErr);
+      }
+
       const msg = await client.sendMessage(chatId, body);
       return {
         success: true,
