@@ -23,6 +23,15 @@ import path from 'path';
 import { MongoClient, Db } from 'mongodb';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
+const tableCache = new Map<string, any[]>();
+
+export function clearTableCache(tableName: string) {
+  tableCache.delete(tableName);
+}
+
+export function clearAllTableCaches() {
+  tableCache.clear();
+}
 
 // ── MongoDB Caching & Singleton Connection ────────────────────────────────────
 
@@ -31,6 +40,16 @@ declare global {
   var __mongoClient: MongoClient | undefined;
   // eslint-disable-next-line no-var
   var __mongoDb: Db | undefined;
+  // eslint-disable-next-line no-var
+  var __mongoClientPromise: Promise<Db | null> | undefined;
+  // eslint-disable-next-line no-var
+  var __mongoConnectionFailed: boolean | undefined;
+  // eslint-disable-next-line no-var
+  var __mongoLastAttemptTime: number | undefined;
+  // eslint-disable-next-line no-var
+  var __dbInitialized: boolean | undefined;
+  // eslint-disable-next-line no-var
+  var __dbInitializingPromise: Promise<void> | undefined;
 }
 
 async function getMongoDb(): Promise<Db | null> {
@@ -39,18 +58,39 @@ async function getMongoDb(): Promise<Db | null> {
 
   if (global.__mongoDb) return global.__mongoDb;
 
-  try {
-    const client = new MongoClient(uri);
-    await client.connect();
-    const db = client.db('aura_attendance');
-    global.__mongoClient = client;
-    global.__mongoDb = db;
-    console.log('[MongoDB] Connected successfully');
-    return db;
-  } catch (error) {
-    console.error('[MongoDB] Connection failed:', error);
-    throw error;
+  // If connection failed recently, avoid blocking and fallback to local JSON immediately
+  const now = Date.now();
+  if (global.__mongoConnectionFailed && global.__mongoLastAttemptTime && (now - global.__mongoLastAttemptTime < 30000)) {
+    return null;
   }
+
+  if (global.__mongoClientPromise) {
+    return global.__mongoClientPromise;
+  }
+
+  global.__mongoLastAttemptTime = now;
+  global.__mongoClientPromise = (async () => {
+    try {
+      const client = new MongoClient(uri, {
+        maxPoolSize: 10,
+        serverSelectionTimeoutMS: 2000, // Reduced to 2s for faster offline fallback
+      });
+      await client.connect();
+      const db = client.db('aura_attendance');
+      global.__mongoClient = client;
+      global.__mongoDb = db;
+      global.__mongoConnectionFailed = false;
+      console.log('[MongoDB] Connected successfully');
+      return db;
+    } catch (error) {
+      console.error('[MongoDB] Connection failed, falling back to local files:', error);
+      global.__mongoConnectionFailed = true;
+      global.__mongoClientPromise = undefined; // clear so we can retry later
+      return null;
+    }
+  })();
+
+  return global.__mongoClientPromise;
 }
 
 /**
@@ -97,10 +137,17 @@ export async function readTable<T>(tableName: string): Promise<T[]> {
   // Fallback to local JSON files
   const filePath = path.join(DATA_DIR, `${tableName}.json`);
   await ensureFileExists(filePath);
+
+  const cached = tableCache.get(tableName);
+  if (cached) {
+    return structuredClone(cached) as T[];
+  }
   
   try {
     const rawData = await fs.readFile(filePath, 'utf8');
-    return JSON.parse(rawData) as T[];
+    const parsed = JSON.parse(rawData) as T[];
+    tableCache.set(tableName, parsed);
+    return structuredClone(parsed) as T[];
   } catch (error) {
     console.error(`Error reading database table "${tableName}":`, error);
     return [];
@@ -142,6 +189,7 @@ export async function writeTable<T>(tableName: string, data: T[]): Promise<void>
     await fs.writeFile(tempPath, serializedData, 'utf8');
     // 2. Atomically rename/replace the target file (guarantees safe write operations)
     await fs.rename(tempPath, filePath);
+    tableCache.set(tableName, structuredClone(data));
   } catch (error) {
     console.error(`Failed to write atomically to database table "${tableName}":`, error);
     // Cleanup temporary file if it was created
@@ -159,7 +207,22 @@ export async function writeTable<T>(tableName: string, data: T[]): Promise<void>
 export async function initDatabase(): Promise<void> {
   const isJestUnitTest = process.env.NODE_ENV === 'test';
 
-  // 1. Try to connect to MongoDB if URI is active
+  if (!isJestUnitTest) {
+    if (global.__dbInitialized) return;
+    if (global.__dbInitializingPromise) return global.__dbInitializingPromise;
+  }
+
+  let resolveInit: () => void = () => {};
+  let rejectInit: (err: any) => void = () => {};
+  if (!isJestUnitTest) {
+    global.__dbInitializingPromise = new Promise<void>((resolve, reject) => {
+      resolveInit = resolve;
+      rejectInit = reject;
+    });
+  }
+
+  try {
+    // 1. Try to connect to MongoDB if URI is active
   try {
     const mongoDb = await getMongoDb();
     if (mongoDb) {
@@ -269,14 +332,29 @@ export async function initDatabase(): Promise<void> {
             },
             {
               email: 'admin@aura.edu',
-              password: 'admin',
-              name: 'Dr. Arthur Dent',
+              password: 'Admin123!',
+              name: 'Principal Aura',
               role: 'admin',
               schoolId: 'school-aura'
             }
           ];
           await usersCol.insertMany(defaultUsers);
+        } else {
+          // If users exist, ensure superadmin is present
+          const hasSuperAdmin = await usersCol.findOne({ role: 'superadmin' });
+          if (!hasSuperAdmin) {
+            await usersCol.insertOne({
+              email: 'superadmin@aura.edu',
+              password: 'SuperAdmin123!',
+              name: 'Platform Super Admin',
+              role: 'superadmin'
+            });
+          }
         }
+      }
+      if (!isJestUnitTest) {
+        global.__dbInitialized = true;
+        resolveInit();
       }
       return;
     }
@@ -481,5 +559,17 @@ export async function initDatabase(): Promise<void> {
     if (notificationsChanged) {
       await writeTable('notifications', migratedNotifications);
     }
+  }
+
+    if (!isJestUnitTest) {
+      global.__dbInitialized = true;
+      resolveInit();
+    }
+  } catch (error) {
+    if (!isJestUnitTest) {
+      global.__dbInitializingPromise = undefined;
+      rejectInit(error);
+    }
+    throw error;
   }
 }

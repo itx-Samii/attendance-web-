@@ -25,149 +25,27 @@ export default function DashboardPage() {
   async function loadStats() {
     try {
       setLoading(true);
-
-      // Fetch user session config
-      let uRole = 'teacher';
-      let uClassId = '';
-      const resUser = await fetch('/api/auth/user');
-      if (resUser.ok) {
-        const userData = await resUser.json();
-        uRole = userData?.user?.role || 'teacher';
-        uClassId = userData?.user?.classId || '';
+      const response = await fetch('/api/dashboard/summary');
+      if (!response.ok) {
+        throw new Error('Unable to load dashboard summary.');
       }
-      setUserRole(uRole);
-      setUserClassId(uClassId);
 
-      if (uRole === 'superadmin') {
-        window.location.href = '/dashboard/super-admin';
+      const data = await response.json();
+      if (data.redirectUrl) {
+        window.location.href = data.redirectUrl;
         return;
       }
 
-      // Load classrooms
-      const resClasses = await fetch('/api/classes');
-      let classesData: Classroom[] = [];
-      if (resClasses.ok) {
-        classesData = await resClasses.json();
-        if (uRole !== 'admin') {
-          classesData = classesData.filter((c: Classroom) => c.classId === uClassId);
-        }
-        setClasses(classesData);
-      }
-
-      // Count students by loading each class's students (or query classes data)
-      let totalStudents = 0;
-      const counts: Record<string, number> = {};
-      for (const cls of classesData) {
-        const resStuds = await fetch(`/api/students?classId=${cls.classId}`);
-        if (resStuds.ok) {
-          const studs = await resStuds.json();
-          totalStudents += studs.length;
-          counts[cls.classId] = studs.length;
-        }
-      }
-      setStudentCount(totalStudents); // Set actual count (displays 0 for new schools)
-      setStudentCounts(counts);
-
-      // Dynamic Attendance average rate calculation (if records exist)
-      const dateString = new Date().toISOString().split('T')[0];
-      let presentCount = 0;
-      let totalMarked = 0;
-      const rates: Record<string, number> = {};
-
-      for (const cls of classesData) {
-        const resAtt = await fetch(`/api/attendance?classId=${cls.classId}&date=${dateString}`);
-        if (resAtt.ok) {
-          const att = await resAtt.json();
-          if (att && att.length > 0) {
-            totalMarked += att.length;
-            const present = att.filter((r: any) => r.status === 'Present' || r.status === 'Late').length;
-            presentCount += present;
-            rates[cls.classId] = Math.round((present / att.length) * 100);
-          } else {
-            // Default to 100% or 0% when no attendance is marked yet
-            rates[cls.classId] = 0;
-          }
-        }
-      }
-      setClassRates(rates);
-
-      if (totalMarked > 0) {
-        const rate = ((presentCount / totalMarked) * 100).toFixed(1);
-        setAverageRate(`${rate}%`);
-      } else {
-        setAverageRate('0%'); // Default rate for new schools
-      }
-
-      // Fetch parent notifications log count dynamically
-      const resAlerts = await fetch('/api/notifications');
-      if (resAlerts.ok) {
-        const alerts = await resAlerts.json();
-        setSmsDispatches(alerts.length);
-      }
-
-      // Calculate dynamic weekly trend rates (Mon - Fri)
-      try {
-        const current = new Date();
-        const day = current.getDay();
-        const diff = current.getDate() - day + (day === 0 ? -6 : 1);
-        const monday = new Date(current.setDate(diff));
-        
-        const dynamicRates: number[] = [];
-        
-        for (let i = 0; i < 5; i++) {
-          const nextDay = new Date(monday);
-          nextDay.setDate(monday.getDate() + i);
-          const dateStr = nextDay.toISOString().split('T')[0];
-          
-          const resTrend = await fetch(`/api/attendance?date=${dateStr}`);
-          if (resTrend.ok) {
-            const dailyLogs = await resTrend.json();
-            let totalStuds = 0;
-            let presentStuds = 0;
-            
-            if (dailyLogs && dailyLogs.length > 0) {
-              dailyLogs.forEach((log: any) => {
-                if (log.records && log.records.length > 0) {
-                  totalStuds += log.records.length;
-                  const presents = log.records.filter((r: any) => r.status === 'Present' || r.status === 'Late').length;
-                  presentStuds += presents;
-                }
-              });
-            }
-            
-            if (totalStuds > 0) {
-              dynamicRates.push(parseFloat(((presentStuds / totalStuds) * 100).toFixed(1)));
-            } else {
-              dynamicRates.push(0);
-            }
-          } else {
-            dynamicRates.push(0);
-          }
-        }
-        
-        const hasData = dynamicRates.some(r => r > 0);
-        if (hasData) {
-          const smoothedRates = dynamicRates.map((r, idx) => {
-            if (r === 0) {
-              for (let j = idx - 1; j >= 0; j--) {
-                if (dynamicRates[j] > 0) return dynamicRates[j];
-              }
-              for (let j = idx + 1; j < 5; j++) {
-                if (dynamicRates[j] > 0) return dynamicRates[j];
-              }
-              return 100;
-            }
-            return r;
-          });
-          setTrendRates(smoothedRates);
-          setHasWeeklyData(true);
-        } else {
-          setTrendRates([97.2, 96.5, 98.0, 95.8, 97.4]);
-          setHasWeeklyData(false);
-        }
-      } catch (err) {
-        console.error('Failed to load weekly trends:', err);
-      }
+      setClasses(data.classes || []);
+      setStudentCount(data.studentCount || 0);
+      setStudentCounts(data.studentCounts || {});
+      setClassRates(data.classRates || {});
+      setAverageRate(data.averageRate || '0%');
+      setSmsDispatches(data.smsDispatches || 0);
+      setUserRole(data.user?.role || 'teacher');
+      setUserClassId(data.user?.classId || '');
+      setTrendRates(data.trendRates || [97.2, 96.5, 98.0, 95.8, 97.4]);
+      setHasWeeklyData(data.hasWeeklyData ?? false);
     } catch (err) {
       console.error('Failed to load dashboard metrics:', err);
     } finally {

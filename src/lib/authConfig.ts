@@ -22,6 +22,12 @@ export const AUTH_CREDENTIALS = {
 
 export async function initUsers(): Promise<void> {
   try {
+    const { initDatabase } = await import('./db');
+    await initDatabase();
+  } catch (err) {
+    console.error('Failed to run initDatabase in initUsers:', err);
+  }
+  try {
     const users = await readTable<StaffUser>('users');
     if (users.length === 0) {
       const defaultUsers: StaffUser[] = [

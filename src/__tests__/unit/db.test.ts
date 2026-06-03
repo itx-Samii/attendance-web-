@@ -25,7 +25,7 @@ jest.mock('fs/promises', () => ({
 }));
 
 import fs from 'fs/promises';
-import { readTable, writeTable, initDatabase } from '@/lib/db';
+import { readTable, writeTable, initDatabase, clearAllTableCaches } from '@/lib/db';
 
 const mockFs = fs as jest.Mocked<typeof fs>;
 const DATA_DIR = path.join(process.cwd(), 'data');
@@ -40,7 +40,10 @@ function tempPath(tableName: string) {
   return path.join(DATA_DIR, `${tableName}.json.tmp`);
 }
 
-beforeEach(() => jest.resetAllMocks());
+beforeEach(() => {
+  jest.resetAllMocks();
+  clearAllTableCaches();
+});
 
 // ════════════════════════════════════════════════════════════
 // ① readTable
