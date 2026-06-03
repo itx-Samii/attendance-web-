@@ -2,6 +2,57 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/authConfig';
 import { readTable, writeTable } from '@/lib/db';
 
+interface SchoolRecord {
+  schoolId: string;
+  schoolName: string;
+  principalEmail: string;
+  status: string;
+  createdAt: string;
+  useSimulator: boolean;
+  whatsappEnabled: boolean;
+  smsTemplate: string;
+  licenseKey: string;
+  licenseStatus: string;
+  licenseExpiry: string;
+  licenseLimitClasses: number;
+}
+
+interface UserRecord {
+  email: string;
+  password?: string;
+  name: string;
+  role: string;
+  classId?: string;
+  schoolId?: string;
+}
+
+interface ClassRecord {
+  classId: string;
+  name: string;
+  schoolId: string;
+}
+
+interface StudentRecord {
+  rollNumber: string;
+  name: string;
+  parentPhone: string;
+  classId: string;
+  schoolId: string;
+}
+
+interface AttendanceRecord {
+  rollNumber: string;
+  classId: string;
+  schoolId: string;
+  status: string;
+  date: string;
+}
+
+interface NotificationRecord {
+  schoolId: string;
+  [key: string]: unknown;
+}
+
 export async function GET() {
   try {
     const session = await getSession();
@@ -9,9 +60,9 @@ export async function GET() {
       return NextResponse.json({ error: 'Access Denied. Super Admin privilege required.' }, { status: 403 });
     }
 
-    const schools = await readTable<any>('schools');
+    const schools = await readTable<SchoolRecord>('schools');
     return NextResponse.json(schools);
-  } catch (error: any) {
+  } catch (error) {
     console.error('Failed to list schools:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
@@ -31,14 +82,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'All fields (schoolName, principalName, principalEmail, password) are required.' }, { status: 400 });
     }
 
-    const users = await readTable<any>('users');
+    const users = await readTable<UserRecord>('users');
     if (users.some((u) => u.email.toLowerCase() === principalEmail.toLowerCase())) {
       return NextResponse.json({ error: 'An account with this email address already exists.' }, { status: 400 });
     }
 
     const schoolId = 'school-' + Math.random().toString(36).substring(2, 9);
 
-    const newSchool = {
+    const newSchool: SchoolRecord = {
       schoolId,
       schoolName: schoolName.trim(),
       principalEmail: principalEmail.trim().toLowerCase(),
@@ -53,7 +104,7 @@ export async function POST(req: NextRequest) {
       licenseLimitClasses: 25,
     };
 
-    const newPrincipal = {
+    const newPrincipal: UserRecord = {
       email: principalEmail.trim().toLowerCase(),
       password: password.trim(),
       name: principalName.trim(),
@@ -61,12 +112,12 @@ export async function POST(req: NextRequest) {
       schoolId,
     };
 
-    const schools = await readTable<any>('schools');
+    const schools = await readTable<SchoolRecord>('schools');
     await writeTable('schools', [...schools, newSchool]);
     await writeTable('users', [...users, newPrincipal]);
 
     return NextResponse.json({ success: true, school: newSchool });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Failed to create school:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
@@ -86,7 +137,7 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: 'schoolId is required.' }, { status: 400 });
     }
 
-    const schools = await readTable<any>('schools');
+    const schools = await readTable<SchoolRecord>('schools');
     const idx = schools.findIndex((s) => s.schoolId === schoolId);
     if (idx === -1) {
       return NextResponse.json({ error: 'School not found.' }, { status: 404 });
@@ -108,7 +159,7 @@ export async function PUT(req: NextRequest) {
 
     // Update school principal password if provided
     if (principalPassword !== undefined && principalPassword.trim() !== '') {
-      const users = await readTable<any>('users');
+      const users = await readTable<UserRecord>('users');
       const uIdx = users.findIndex(
         (u) => u.email.toLowerCase() === school.principalEmail.toLowerCase()
       );
@@ -120,8 +171,63 @@ export async function PUT(req: NextRequest) {
 
     await writeTable('schools', schools);
     return NextResponse.json({ success: true, school });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Failed to update school:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const session = await getSession();
+    if (!session || session.role !== 'superadmin') {
+      return NextResponse.json({ error: 'Access Denied.' }, { status: 403 });
+    }
+
+    const { searchParams } = new URL(req.url);
+    const schoolId = searchParams.get('schoolId');
+
+    if (!schoolId) {
+      return NextResponse.json({ error: 'schoolId parameter is required.' }, { status: 400 });
+    }
+
+    const schools = await readTable<SchoolRecord>('schools');
+    const schoolIdx = schools.findIndex((s) => s.schoolId === schoolId);
+    if (schoolIdx === -1) {
+      return NextResponse.json({ error: 'School not found.' }, { status: 404 });
+    }
+    const school = schools[schoolIdx];
+    const principalEmail = school.principalEmail;
+
+    // Filter and update all collections to execute cascade delete
+    const filteredSchools = schools.filter((s) => s.schoolId !== schoolId);
+    await writeTable('schools', filteredSchools);
+
+    const users = await readTable<UserRecord>('users');
+    const filteredUsers = users.filter(
+      (u) => u.schoolId !== schoolId && (!principalEmail || u.email.toLowerCase() !== principalEmail.toLowerCase())
+    );
+    await writeTable('users', filteredUsers);
+
+    const classes = await readTable<ClassRecord>('classes');
+    const filteredClasses = classes.filter((c) => c.schoolId !== schoolId);
+    await writeTable('classes', filteredClasses);
+
+    const students = await readTable<StudentRecord>('students');
+    const filteredStudents = students.filter((s) => s.schoolId !== schoolId);
+    await writeTable('students', filteredStudents);
+
+    const attendance = await readTable<AttendanceRecord>('attendance');
+    const filteredAttendance = attendance.filter((a) => a.schoolId !== schoolId);
+    await writeTable('attendance', filteredAttendance);
+
+    const notifications = await readTable<NotificationRecord>('notifications');
+    const filteredNotifications = notifications.filter((n) => n.schoolId !== schoolId);
+    await writeTable('notifications', filteredNotifications);
+
+    return NextResponse.json({ success: true, message: 'School and all associated records deleted successfully.' });
+  } catch (error) {
+    console.error('Failed to delete school:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

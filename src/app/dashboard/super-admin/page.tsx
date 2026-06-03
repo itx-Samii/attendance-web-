@@ -47,6 +47,12 @@ export default function SuperAdminPanel() {
   const [resetPasswordValue, setResetPasswordValue] = useState('');
   const [resettingPassword, setResettingPassword] = useState(false);
 
+  // Delete School states
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [schoolToDelete, setSchoolToDelete] = useState<School | null>(null);
+  const [confirmSchoolName, setConfirmSchoolName] = useState('');
+  const [deleting, setDeleting] = useState(false);
+
   const [toast, setToast] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
   const [activeSection, setActiveSection] = useState<'overview' | 'registry' | 'license'>('overview');
 
@@ -209,6 +215,33 @@ export default function SuperAdminPanel() {
       showToast('Network error.', 'error');
     } finally {
       setResettingPassword(false);
+    }
+  };
+
+  const handleDeleteSchool = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!schoolToDelete || confirmSchoolName !== schoolToDelete.schoolName) return;
+
+    try {
+      setDeleting(true);
+      const res = await fetch(`/api/schools?schoolId=${schoolToDelete.schoolId}`, {
+        method: 'DELETE',
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showToast('School registry and all associated records deleted.');
+        setShowDeleteModal(false);
+        setSchoolToDelete(null);
+        setConfirmSchoolName('');
+        loadSchools();
+      } else {
+        showToast(data?.error || 'Failed to delete school.', 'error');
+      }
+    } catch {
+      showToast('Network error.', 'error');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -530,6 +563,29 @@ export default function SuperAdminPanel() {
                                     Unsuspend
                                   </button>
                                 )}
+
+                                <button onClick={() => {
+                                  setSchoolToDelete(s);
+                                  setConfirmSchoolName('');
+                                  setShowDeleteModal(true);
+                                }}
+                                  style={{
+                                    padding: '6px 12px', borderRadius: '6px', cursor: 'pointer',
+                                    backgroundColor: '#ef4444', color: '#fff', fontSize: '0.78rem', fontWeight: 700,
+                                    border: 'none',
+                                    transition: 'all 0.15s ease',
+                                  }}
+                                  onMouseEnter={e => {
+                                    e.currentTarget.style.backgroundColor = '#dc2626';
+                                    e.currentTarget.style.transform = 'translateY(-1px)';
+                                  }}
+                                  onMouseLeave={e => {
+                                    e.currentTarget.style.backgroundColor = '#ef4444';
+                                    e.currentTarget.style.transform = 'none';
+                                  }}
+                                >
+                                  🗑️ Delete
+                                </button>
                               </div>
                             </td>
                           </tr>
@@ -567,7 +623,7 @@ export default function SuperAdminPanel() {
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     <label style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>License Status</label>
-                    <select value={licenseStatus} onChange={e => setLicenseStatus(e.target.value as any)}
+                    <select value={licenseStatus} onChange={e => setLicenseStatus(e.target.value as School['licenseStatus'])}
                       style={{ padding: '12px 16px', borderRadius: '10px', border: '1px solid var(--border-dim)', backgroundColor: 'var(--background-alt)', color: 'var(--text-primary)', fontSize: '0.9rem' }}>
                       <option value="Active">Active</option>
                       <option value="Trial">Trial Mode</option>
@@ -725,6 +781,68 @@ export default function SuperAdminPanel() {
                     opacity: resettingPassword ? 0.7 : 1,
                   }}>
                   {resettingPassword ? 'Updating...' : 'Save Password'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* DELETE MODAL */}
+      {showDeleteModal && schoolToDelete && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 9999,
+          backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px',
+        }}>
+          <div className="glass-panel" style={{
+            width: '100%', maxWidth: '440px', padding: '36px', borderRadius: '20px',
+            border: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column', gap: '20px',
+            boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+            animation: 'fadeInUp 0.3s ease',
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#ef4444' }}>
+                ⚠️ Delete School License?
+              </h3>
+              <button onClick={() => { setShowDeleteModal(false); setSchoolToDelete(null); setConfirmSchoolName(''); }}
+                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '1.2rem', cursor: 'pointer' }}>×</button>
+            </div>
+
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
+              This will permanently delete the school <strong>{schoolToDelete.schoolName}</strong>.
+              This is a <strong>CASCADING DELETE</strong> and will permanently wipe out:
+            </p>
+            <ul style={{ fontSize: '0.8rem', color: '#ef4444', margin: 0, paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <li>All classroom configurations and teacher accounts</li>
+              <li>All registered student records and parents contacts</li>
+              <li>All historical daily attendance logs</li>
+              <li>All WhatsApp alert dispatches logs</li>
+            </ul>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
+              To confirm this action, please type the school&apos;s name: <strong>{schoolToDelete.schoolName}</strong> below.
+            </p>
+
+            <form onSubmit={handleDeleteSchool} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <input type="text" placeholder="Type school name to confirm" value={confirmSchoolName} onChange={e => setConfirmSchoolName(e.target.value)} required
+                  style={{ padding: '10px 14px', borderRadius: '8px', border: '1px solid rgba(239,68,68,0.3)', backgroundColor: 'var(--background-alt)', color: 'var(--text-primary)', outline: 'none' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>
+                <button type="button" onClick={() => { setShowDeleteModal(false); setSchoolToDelete(null); setConfirmSchoolName(''); }}
+                  style={{ padding: '10px 20px', borderRadius: '8px', border: '1px solid var(--border-dim)', backgroundColor: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', fontWeight: 600 }}>
+                  Cancel
+                </button>
+                <button type="submit" disabled={deleting || confirmSchoolName !== schoolToDelete.schoolName}
+                  style={{
+                    padding: '10px 24px', borderRadius: '8px', border: 'none', cursor: (deleting || confirmSchoolName !== schoolToDelete.schoolName) ? 'not-allowed' : 'pointer',
+                    backgroundColor: '#ef4444', color: '#fff', fontWeight: 700,
+                    boxShadow: '0 4px 12px rgba(239,68,68,0.3)',
+                    opacity: (deleting || confirmSchoolName !== schoolToDelete.schoolName) ? 0.6 : 1,
+                  }}>
+                  {deleting ? 'Deleting...' : 'Permanently Delete'}
                 </button>
               </div>
             </form>
