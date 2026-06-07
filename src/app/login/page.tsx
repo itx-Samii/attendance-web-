@@ -458,11 +458,10 @@ export default function LoginPage() {
         >
           <span>Test Platform Login details:</span>
           <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', flexWrap: 'wrap' }}>
-            <span><strong>superadmin@aura.edu</strong> (Super Admin)</span>
-            <span>|</span>
-            <span><strong>admin@aura.edu</strong> (Principal)</span>
+            <span><strong>testadmin@aura.edu</strong></span>
+            
           </div>
-          <span>Password: <strong>Admin123!</strong> or <strong>SuperAdmin123!</strong></span>
+          <span>Password: <strong>Test123</strong>
         </div>
       </div>
 
