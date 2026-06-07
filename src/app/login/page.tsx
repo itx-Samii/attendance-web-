@@ -461,7 +461,7 @@ export default function LoginPage() {
             <span><strong>testadmin@aura.edu</strong></span>
             
           </div>
-          <span>Password: <strong>Test123</strong>
+          <span>Password:<strong>Test123</strong>
         </div>
       </div>
 
